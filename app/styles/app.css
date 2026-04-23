@@ -1,0 +1,124 @@
+@import '@fontsource/poppins/300.css';
+@import '@fontsource/poppins/400.css';
+@import '@fontsource/poppins/500.css';
+@import '@fontsource/poppins/600.css';
+@import '@fontsource/poppins/700.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body {
+    @apply bg-white text-zinc-900 antialiased;
+    font-family: 'Poppins', system-ui, sans-serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-semibold tracking-tight text-zinc-900;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center rounded px-5 py-2 text-sm font-medium no-underline shadow-sm transition hover:no-underline focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+
+  .btn-primary {
+    @apply btn bg-red-700 text-white shadow-red-500/10 hover:bg-red-600 focus:ring-red-300;
+  }
+
+  .btn-secondary {
+    @apply btn border border-zinc-300 bg-white text-zinc-900 hover:border-zinc-400 hover:bg-zinc-50 focus:ring-zinc-300;
+  }
+
+  .card {
+    @apply rounded-lg border border-zinc-200 bg-white p-6 shadow-sm;
+  }
+
+  .input {
+    @apply block w-full rounded border-zinc-300 bg-white text-zinc-900 shadow-sm focus:border-red-500 focus:ring-red-500;
+  }
+}
+
+/* ── Progress bar (lifted from solid-forge) ── */
+
+@keyframes progress-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(250%);
+  }
+}
+
+@keyframes progress-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.progress-bar {
+  position: relative;
+  height: 3px;
+  background: theme('colors.zinc.100');
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.progress-bar-shimmer {
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    theme('colors.red.700') 50%,
+    transparent 100%
+  );
+  animation: progress-shimmer 1.4s ease-in-out infinite;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: theme('colors.red.700');
+  border-radius: 99px;
+  transition: width 0.2s ease-out;
+  min-width: 4px;
+}
+
+.progress-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 16rem;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+.progress-steps li {
+  flex-shrink: 0;
+  animation: progress-fade-in-up 0.18s ease-out;
+  font-size: 0.6875rem;
+  color: theme('colors.zinc.500');
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
