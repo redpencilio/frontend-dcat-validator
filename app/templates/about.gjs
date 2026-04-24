@@ -9,18 +9,14 @@ import { pageTitle } from 'ember-page-title';
       This tool validates DCAT catalog endpoints against the
       <a
         href="https://mobilitydcat-ap.github.io/mobilityDCAT-AP/releases/index.html"
-        target="_blank"
-        rel="noopener"
-        class="text-red-700 hover:text-red-600"
+        target="_blank" rel="noopener noreferrer" class="text-red-700 hover:text-red-600"
       >mobilityDCAT-AP</a>
       specification. It crawls paginated catalogs, aggregates the graph, and
       runs both SHACL validation and the deeper semantic-quality checks we
       developed for our
       <a
         href="https://github.com/redpencilio/mobilitydcatap-study"
-        target="_blank"
-        rel="noopener"
-        class="text-red-700 hover:text-red-600"
+        target="_blank" rel="noopener noreferrer" class="text-red-700 hover:text-red-600"
       ><em>mobilityDCAT-AP in practice</em> study</a>
       (ITS Europe 2026).
     </p>
@@ -43,9 +39,7 @@ import { pageTitle } from 'ember-page-title';
       Red Pencil builds semantic web applications. See
       <a
         href="https://redpencil.io"
-        target="_blank"
-        rel="noopener"
-        class="text-red-700 hover:text-red-600"
+        target="_blank" rel="noopener noreferrer" class="text-red-700 hover:text-red-600"
       >redpencil.io</a>
       for more.
     </p>

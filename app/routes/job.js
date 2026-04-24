@@ -27,9 +27,9 @@ export default class JobRoute extends Route {
     this.#loadError = null;
     try {
       const { content } = await this.store.request(
-        findRecord('validation-jobs', params.job_id, {
+        findRecord('validation-job', params.job_id, {
           reload: true,
-          include: ['report'],
+          include: ['coverage-report'],
         }),
       );
       return content.data;
@@ -66,17 +66,17 @@ export default class JobRoute extends Route {
     if (!this.#currentId) return;
     try {
       const { content } = await this.store.request(
-        findRecord('validation-jobs', this.#currentId, {
+        findRecord('validation-job', this.#currentId, {
           reload: true,
-          include: ['report'],
+          include: ['coverage-report'],
         }),
       );
       const job = content.data;
       const status = (job.status || '').split('/').at(-1).toLowerCase();
 
       if (status === 'finished' || status === 'success') {
-        if (job.report?.id) {
-          this.router.replaceWith('report', job.report.id);
+        if (job['coverage-report']?.data?.id) {
+          this.router.replaceWith('report', job['coverage-report'].data.id);
         }
         return;
       }

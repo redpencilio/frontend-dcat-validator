@@ -1,8 +1,8 @@
-@import '@fontsource/poppins/300.css';
-@import '@fontsource/poppins/400.css';
-@import '@fontsource/poppins/500.css';
-@import '@fontsource/poppins/600.css';
-@import '@fontsource/poppins/700.css';
+@import url('@fontsource/poppins/300.css');
+@import url('@fontsource/poppins/400.css');
+@import url('@fontsource/poppins/500.css');
+@import url('@fontsource/poppins/600.css');
+@import url('@fontsource/poppins/700.css');
 
 @tailwind base;
 @tailwind components;
@@ -12,7 +12,8 @@
   html,
   body {
     @apply bg-white text-zinc-900 antialiased;
-    font-family: 'Poppins', system-ui, sans-serif;
+
+    font-family: Poppins, system-ui, sans-serif;
   }
 
   h1,
@@ -55,6 +56,7 @@
   0% {
     transform: translateX(-100%);
   }
+
   100% {
     transform: translateX(250%);
   }
@@ -65,6 +67,7 @@
     opacity: 0;
     transform: translateY(5px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

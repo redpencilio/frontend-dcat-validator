@@ -19,9 +19,9 @@ export default class ReportRoute extends Route {
     this.#loadError = null;
     try {
       const { content } = await this.store.request(
-        findRecord('validation-reports', params.report_id, {
+        findRecord('validation-summary', params.report_id, {
           reload: true,
-          include: ['violations'],
+          include: ['coverage-job', 'target-class-summaries', 'target-class-summaries.rule-summaries'],
         }),
       );
       return content.data;
@@ -35,5 +35,15 @@ export default class ReportRoute extends Route {
     super.setupController(controller, model);
     controller.errorMessage = this.#loadError;
     controller.expandedGroup = null;
+    controller.reportDate = null;
+    const jobId = model?.['coverage-job']?.data?.id;
+    if (jobId) {
+      try {
+        const job = this.store.peekRecord('validation-jobs', jobId);
+        controller.reportDate = job?.modifiedAt ?? job?.createdAt ?? null;
+      } catch {
+        // date unavailable
+      }
+    }
   }
 }

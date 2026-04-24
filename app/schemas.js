@@ -4,8 +4,8 @@ export const validationJobSchema = {
   fields: [
     { kind: 'field', name: 'endpointUrl', sourceKey: 'endpoint-url' },
     { kind: 'field', name: 'status' },
-    { kind: 'field', name: 'createdAt', sourceKey: 'created-at' },
-    { kind: 'field', name: 'modifiedAt', sourceKey: 'modified-at' },
+    { kind: 'field', name: 'createdAt', sourceKey: 'created' },
+    { kind: 'field', name: 'modifiedAt', sourceKey: 'modified' },
     { kind: 'field', name: 'pagesFetched', sourceKey: 'pages-fetched' },
     { kind: 'field', name: 'totalPages', sourceKey: 'total-pages' },
     { kind: 'field', name: 'datasetsFound', sourceKey: 'datasets-found' },
@@ -16,62 +16,88 @@ export const validationJobSchema = {
       name: 'cachedFromAgeHours',
       sourceKey: 'cached-from-age-hours',
     },
+    { kind: 'field', name: 'creator' },
+    { kind: 'field', name: 'operation' },
+    { kind: 'field', name: 'uri' },
     {
       kind: 'resource',
-      name: 'report',
-      type: 'validation-reports',
+      name: 'shacl-report',
+      type: 'validation-summaries',
+      options: { async: true, inverse: null },
+    },
+    {
+      kind: 'resource',
+      name: 'coverage-report',
+      type: 'validation-summaries',
       options: { async: true, inverse: null },
     },
   ],
 };
 
-export const validationReportSchema = {
-  type: 'validation-reports',
+export const validationSummarySchema = {
+  type: 'validation-summaries',
   identity: { kind: '@id', name: 'id' },
   fields: [
     { kind: 'field', name: 'endpointUrl', sourceKey: 'endpoint-url' },
-    { kind: 'field', name: 'overallScore', sourceKey: 'overall-score' },
-    { kind: 'field', name: 'datasetCount', sourceKey: 'dataset-count' },
-    { kind: 'field', name: 'errorCount', sourceKey: 'error-count' },
-    { kind: 'field', name: 'warningCount', sourceKey: 'warning-count' },
-    { kind: 'field', name: 'infoCount', sourceKey: 'info-count' },
+    { kind: 'field', name: 'totalViolations', sourceKey: 'total-violations' },
+    { kind: 'field', name: 'uri' },
     {
-      kind: 'field',
-      name: 'completenessScore',
-      sourceKey: 'completeness-score',
+      kind: 'hasMany',
+      name: 'targetClassSummaries',
+      type: 'target-class-summaries',
+      sourceKey: 'target-class-summaries',
+      options: { async: false, linksMode: true, inverse: null },
     },
-    { kind: 'field', name: 'createdAt', sourceKey: 'created-at' },
-    { kind: 'field', name: 'expiresAt', sourceKey: 'expires-at' },
     {
       kind: 'resource',
-      name: 'job',
-      type: 'jobs',
+      name: 'shacl-job',
+      type: 'validation-jobs',
       options: { async: true, inverse: null },
     },
     {
-      kind: 'collection',
-      name: 'violations',
-      type: 'violations',
+      kind: 'resource',
+      name: 'coverage-job',
+      type: 'validation-jobs',
       options: { async: true, inverse: null },
     },
   ],
 };
 
-export const violationSchema = {
-  type: 'violations',
+export const targetClassSummarySchema = {
+  type: 'target-class-summaries',
   identity: { kind: '@id', name: 'id' },
   fields: [
-    { kind: 'field', name: 'severity' },
-    { kind: 'field', name: 'layer' },
-    { kind: 'field', name: 'checkType', sourceKey: 'check-type' },
-    { kind: 'field', name: 'resourceUri', sourceKey: 'resource-uri' },
-    { kind: 'field', name: 'resourceType', sourceKey: 'resource-type' },
-    { kind: 'field', name: 'message' },
-    { kind: 'field', name: 'recommendation' },
+    { kind: 'field', name: 'targetClass', sourceKey: 'target-class' },
+    { kind: 'field', name: 'resourceCount', sourceKey: 'resource-count' },
+    { kind: 'field', name: 'uri' },
+    {
+      kind: 'hasMany',
+      name: 'ruleSummaries',
+      type: 'rule-summaries',
+      sourceKey: 'rule-summaries',
+      options: { async: false, linksMode: true, inverse: null },
+    },
     {
       kind: 'resource',
-      name: 'report',
-      type: 'validation-reports',
+      name: 'validation-summary',
+      type: 'validation-summaries',
+      options: { async: true, inverse: null },
+    },
+  ],
+};
+
+export const ruleSummarySchema = {
+  type: 'rule-summaries',
+  identity: { kind: '@id', name: 'id' },
+  fields: [
+    { kind: 'field', name: 'violationCount', sourceKey: 'violation-count' },
+    { kind: 'field', name: 'ruleConstraint', sourceKey: 'rule-constraint' },
+    { kind: 'field', name: 'severity' },
+    { kind: 'field', name: 'uri' },
+    {
+      kind: 'resource',
+      name: 'target-class-summary',
+      type: 'target-class-summaries',
       options: { async: true, inverse: null },
     },
   ],
@@ -94,7 +120,8 @@ export const endpointSchema = {
 
 export const schemas = [
   validationJobSchema,
-  validationReportSchema,
-  violationSchema,
+  validationSummarySchema,
+  targetClassSummarySchema,
+  ruleSummarySchema,
   endpointSchema,
 ];

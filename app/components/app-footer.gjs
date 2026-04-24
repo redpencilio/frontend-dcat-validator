@@ -11,9 +11,7 @@ const currentYear = new Date().getFullYear();
           Built by
           <a
             href="https://redpencil.io"
-            target="_blank"
-            rel="noopener"
-            class="font-medium text-red-700 hover:text-red-600"
+            target="_blank" rel="noopener noreferrer" class="font-medium text-red-700 hover:text-red-600"
           >redpencil.io</a>. We build interoperable, open-data platforms on the
           semantic web.
         </p>
@@ -27,9 +25,7 @@ const currentYear = new Date().getFullYear();
           Validates DCAT catalog endpoints against the
           <a
             href="https://mobilitydcat-ap.github.io/mobilityDCAT-AP/releases/index.html"
-            target="_blank"
-            rel="noopener"
-            class="text-red-700 hover:text-red-600"
+            target="_blank" rel="noopener noreferrer" class="text-red-700 hover:text-red-600"
           >mobilityDCAT-AP</a>
           specification, including the deeper checks developed during our
           <em>mobilityDCAT-AP in practice</em>
@@ -44,15 +40,11 @@ const currentYear = new Date().getFullYear();
         <ul class="space-y-2 text-zinc-600">
           <li><a
               href="https://github.com/redpencilio/mobilitydcatap-study"
-              target="_blank"
-              rel="noopener"
-              class="hover:text-zinc-900"
+              target="_blank" rel="noopener noreferrer" class="hover:text-zinc-900"
             ><em>mobilityDCAT-AP in practice</em> (ITS Europe 2026)</a></li>
           <li><a
               href="https://github.com/mobilityDCAT-AP/mobilityDCAT-AP"
-              target="_blank"
-              rel="noopener"
-              class="hover:text-zinc-900"
+              target="_blank" rel="noopener noreferrer" class="hover:text-zinc-900"
             >Official SHACL shapes</a></li>
         </ul>
       </div>

@@ -17,12 +17,12 @@ const KNOWN_ENDPOINTS = [
   {
     country: 'Germany',
     label: 'mobilithek.info',
-    url: 'https://mobilithek.info/mdp-api/files/aux/catalog',
+    url: 'https://mobilithek.info/mobilithek/api/v1.0/export/datasets/mobilitydcatap',
   },
   {
-    country: 'France',
-    label: 'transport.data.gouv.fr',
-    url: 'https://transport.data.gouv.fr/api/datasets',
+    country: 'Austria',
+    label: 'mobilitydata.gv.at',
+    url: 'https://www.mobilitydata.gv.at/api/mobility_dcat/en',
   },
 ];
 
@@ -106,7 +106,7 @@ export default class IndexController extends Controller {
       );
       init.headers.set('Content-Type', 'application/vnd.api+json');
       const response = await this.store.request(init);
-      const reportId = response?.content?.data?.report?.id;
+      const reportId = response?.content?.data?.['coverage-report']?.data?.id;
       await new Promise((resolve) => setTimeout(resolve, 2000));
       if (reportId) {
         this.router.replaceWith('report', reportId);

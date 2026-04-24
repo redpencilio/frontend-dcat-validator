@@ -57,23 +57,8 @@ function isFailed(model) {
       <div class="card mt-8">
         <div class="flex items-baseline justify-between">
           <h2 class="text-sm font-medium text-zinc-800">
-            {{#if @model.datasetsFound}}
-              Crawling catalog
-            {{else}}
               Discovering catalog
-            {{/if}}
           </h2>
-          <span class="text-xs tabular-nums text-zinc-500">
-            {{#if @model.pagesFetched}}
-              {{@model.pagesFetched}}
-              pages
-              {{#if @model.datasetsFound}}
-                · {{@model.datasetsFound}} datasets
-              {{/if}}
-            {{else}}
-              status: {{@model.status}}
-            {{/if}}
-          </span>
         </div>
 
         <div class="mt-3">
