@@ -1,5 +1,5 @@
 export const validationJobSchema = {
-  type: 'validation-job',
+  type: 'validation-jobs',
   identity: { kind: '@id', name: 'id' },
   fields: [
     { kind: 'field', name: 'endpointUrl', sourceKey: 'endpoint-url' },
@@ -10,17 +10,23 @@ export const validationJobSchema = {
     { kind: 'field', name: 'totalPages', sourceKey: 'total-pages' },
     { kind: 'field', name: 'datasetsFound', sourceKey: 'datasets-found' },
     { kind: 'field', name: 'errorMessage', sourceKey: 'error-message' },
+    { kind: 'field', name: 'cached' },
+    {
+      kind: 'field',
+      name: 'cachedFromAgeHours',
+      sourceKey: 'cached-from-age-hours',
+    },
     {
       kind: 'resource',
       name: 'report',
-      type: 'validation-report',
+      type: 'validation-reports',
       options: { async: true, inverse: 'job' },
     },
   ],
 };
 
 export const validationReportSchema = {
-  type: 'validation-report',
+  type: 'validation-reports',
   identity: { kind: '@id', name: 'id' },
   fields: [
     { kind: 'field', name: 'endpointUrl', sourceKey: 'endpoint-url' },
@@ -29,26 +35,30 @@ export const validationReportSchema = {
     { kind: 'field', name: 'errorCount', sourceKey: 'error-count' },
     { kind: 'field', name: 'warningCount', sourceKey: 'warning-count' },
     { kind: 'field', name: 'infoCount', sourceKey: 'info-count' },
-    { kind: 'field', name: 'completenessScore', sourceKey: 'completeness-score' },
+    {
+      kind: 'field',
+      name: 'completenessScore',
+      sourceKey: 'completeness-score',
+    },
     { kind: 'field', name: 'createdAt', sourceKey: 'created-at' },
     { kind: 'field', name: 'expiresAt', sourceKey: 'expires-at' },
     {
       kind: 'resource',
       name: 'job',
-      type: 'validation-job',
+      type: 'validation-jobs',
       options: { async: true, inverse: 'report' },
     },
     {
       kind: 'collection',
       name: 'violations',
-      type: 'violation',
+      type: 'violations',
       options: { async: true, inverse: 'report' },
     },
   ],
 };
 
 export const violationSchema = {
-  type: 'violation',
+  type: 'violations',
   identity: { kind: '@id', name: 'id' },
   fields: [
     { kind: 'field', name: 'severity' },
@@ -61,20 +71,24 @@ export const violationSchema = {
     {
       kind: 'resource',
       name: 'report',
-      type: 'validation-report',
+      type: 'validation-reports',
       options: { async: true, inverse: 'violations' },
     },
   ],
 };
 
 export const endpointSchema = {
-  type: 'endpoint',
+  type: 'endpoints',
   identity: { kind: '@id', name: 'id' },
   fields: [
     { kind: 'field', name: 'url' },
     { kind: 'field', name: 'label' },
     { kind: 'field', name: 'country' },
-    { kind: 'field', name: 'lastValidatedAt', sourceKey: 'last-validated-at' },
+    {
+      kind: 'field',
+      name: 'lastValidatedAt',
+      sourceKey: 'last-validated-at',
+    },
   ],
 };
 

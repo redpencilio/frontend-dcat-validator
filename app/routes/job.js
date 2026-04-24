@@ -17,7 +17,7 @@ export default class JobRoute extends Route {
   async model(params) {
     this.#currentId = params.job_id;
     const { content } = await this.store.request(
-      findRecord('validation-job', params.job_id, {
+      findRecord('validation-jobs', params.job_id, {
         reload: true,
         include: ['report'],
       }),
@@ -47,7 +47,7 @@ export default class JobRoute extends Route {
     if (!this.#currentId) return;
     try {
       const { content } = await this.store.request(
-        findRecord('validation-job', this.#currentId, {
+        findRecord('validation-jobs', this.#currentId, {
           reload: true,
           include: ['report'],
         }),
