@@ -22,17 +22,26 @@ function totalResources(summaries) {
   return [...summaries].reduce((sum, cls) => sum + (cls.resourceCount ?? 0), 0);
 }
 
-function classViolations(cls) {
+function severityViolations(cls, sev) {
   if (!cls.ruleSummaries) return 0;
-  return [...cls.ruleSummaries].reduce((sum, r) => sum + (r.violationCount ?? 0), 0);
+  return [...cls.ruleSummaries]
+    .filter((r) => severityOf(r) === sev)
+    .reduce((sum, r) => sum + (r.violationCount ?? 0), 0);
+}
+
+function classViolations(cls) {
+  return severityViolations(cls, 'violation');
 }
 
 function sortedClasses(summaries) {
   if (!summaries) return [];
   return [...summaries].sort((a, b) => {
-    const av = [...(a.ruleSummaries ?? [])].reduce((s, r) => s + (r.violationCount ?? 0), 0);
-    const bv = [...(b.ruleSummaries ?? [])].reduce((s, r) => s + (r.violationCount ?? 0), 0);
-    if (bv !== av) return bv - av;
+    const score = (cls) =>
+      severityViolations(cls, 'violation') * 1000 +
+      severityViolations(cls, 'warning') * 10 +
+      severityViolations(cls, 'info');
+    const diff = score(b) - score(a);
+    if (diff !== 0) return diff;
     return (b.resourceCount ?? 0) - (a.resourceCount ?? 0);
   });
 }
@@ -51,13 +60,21 @@ function rulesFor(cls, sev) {
     .sort((a, b) => (b.violationCount ?? 0) - (a.violationCount ?? 0));
 }
 
-function pct(rule, cls) {
+function sum(a, b, c) {
+  return (a ?? 0) + (b ?? 0) + (c ?? 0);
+}
+
+function compliant(rule, cls) {
+  return (cls.resourceCount ?? 0) - (rule.violationCount ?? 0);
+}
+
+function compliancePct(rule, cls) {
   if (!cls.resourceCount) return 0;
-  return Math.round((rule.violationCount / cls.resourceCount) * 100);
+  return Math.round((compliant(rule, cls) / cls.resourceCount) * 100);
 }
 
 function barStyle(rule, cls) {
-  return htmlSafe(`width:${pct(rule, cls)}%`);
+  return htmlSafe(`width:${compliancePct(rule, cls)}%`);
 }
 
 function formatDate(d) {
@@ -97,7 +114,7 @@ function formatDate(d) {
           {{#let (formatDate @controller.reportDate) as |d|}}
             {{#if d}}{{d}} · {{/if}}
           {{/let}}
-          {{totalResources @model.targetClassSummaries}} datasets ·
+          {{totalResources @model.targetClassSummaries}} resources reviewed ·
           {{#if @model.totalViolations}}
             <span class="font-semibold text-red-600">{{@model.totalViolations}} violations</span>
           {{else}}
@@ -128,15 +145,48 @@ function formatDate(d) {
               <span class="shrink-0 text-sm text-zinc-500">
                 <span class="font-semibold text-zinc-700">{{cls.resourceCount}}</span> resources
               </span>
-              {{#if (eq (classViolations cls) 0)}}
-                <span class="shrink-0 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">
-                  Compliant
-                </span>
-              {{else}}
-                <span class="shrink-0 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800">
-                  {{classViolations cls}} violations
-                </span>
-              {{/if}}
+              {{#let
+                (severityViolations cls "violation")
+                (severityViolations cls "warning")
+                (severityViolations cls "info")
+              as |mandatory recommended optional|}}
+                {{#if (eq mandatory 0)}}
+                  {{#if (eq recommended 0)}}
+                    {{#if (eq optional 0)}}
+                      <span class="shrink-0 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">
+                        Compliant
+                      </span>
+                    {{else}}
+                      <span class="shrink-0 rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-semibold text-zinc-600">
+                        {{optional}} optional
+                      </span>
+                    {{/if}}
+                  {{else}}
+                    <span class="shrink-0 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+                      {{recommended}} recommended
+                    </span>
+                    {{#if optional}}
+                      <span class="shrink-0 rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-semibold text-zinc-600">
+                        {{optional}} optional
+                      </span>
+                    {{/if}}
+                  {{/if}}
+                {{else}}
+                  <span class="shrink-0 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800">
+                    {{mandatory}} mandatory
+                  </span>
+                  {{#if recommended}}
+                    <span class="shrink-0 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+                      {{recommended}} recommended
+                    </span>
+                  {{/if}}
+                  {{#if optional}}
+                    <span class="shrink-0 rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-semibold text-zinc-600">
+                      {{optional}} optional
+                    </span>
+                  {{/if}}
+                {{/if}}
+              {{/let}}
               <span class="shrink-0 text-zinc-300 group-hover:text-zinc-500">
                 {{if (eq @controller.expandedGroup cls.id) "▲" "▼"}}
               </span>
@@ -144,122 +194,121 @@ function formatDate(d) {
 
             {{! Expanded body }}
             {{#if (eq @controller.expandedGroup cls.id)}}
-              {{#if (eq (classViolations cls) 0)}}
+              {{#let
+                (severityViolations cls "violation")
+                (severityViolations cls "warning")
+                (severityViolations cls "info")
+              as |mandatory recommended optional|}}
+              {{#if (eq (sum mandatory recommended optional) 0)}}
                 <div class="border-t border-zinc-100 px-5 py-5 text-sm text-green-700">
                   All {{cls.resourceCount}} resources fully comply with all constraints for this class.
                 </div>
               {{else}}
-                <div class="divide-y divide-zinc-100 border-t border-zinc-200">
+                <table class="w-full border-t border-zinc-200 text-sm">
+                  <thead>
+                    <tr class="border-b border-zinc-100 bg-white">
+                      <th class="px-5 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Property</th>
+                      <th class="px-4 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Compliant</th>
+                      <th class="w-36"></th>
+                      <th class="w-14 pr-5 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Score</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-zinc-50 bg-white">
 
-                  {{! ── Mandatory (sh:Violation) ── }}
-                  {{#let (rulesFor cls "violation") as |rules|}}
-                    {{#if rules.length}}
-                      <div>
-                        <div class="bg-red-50 px-5 py-1.5">
-                          <span class="text-[10px] font-bold uppercase tracking-widest text-red-600">
-                            Mandatory
-                          </span>
-                        </div>
-                        <table class="w-full text-sm">
-                          <tbody class="divide-y divide-zinc-50 bg-white">
-                            {{#each rules as |rule|}}
-                              <tr class="hover:bg-zinc-50">
-                                <td class="w-1/3 px-5 py-2.5 font-mono text-xs text-zinc-700">
-                                  {{shortLabel rule.ruleConstraint}}
-                                </td>
-                                <td class="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-xs font-semibold text-red-700">
-                                  {{rule.violationCount}} / {{cls.resourceCount}}
-                                </td>
-                                <td class="w-36 px-4 py-2.5">
-                                  <div class="h-1.5 overflow-hidden rounded-full bg-red-100">
-                                    <div class="h-full rounded-full bg-red-500" style={{barStyle rule cls}}></div>
-                                  </div>
-                                </td>
-                                <td class="w-10 py-2.5 pr-5 text-right text-xs text-zinc-400">
-                                  {{pct rule cls}}%
-                                </td>
-                              </tr>
-                            {{/each}}
-                          </tbody>
-                        </table>
-                      </div>
-                    {{/if}}
-                  {{/let}}
+                    {{! ── Mandatory ── }}
+                    <tr class="bg-red-50">
+                      <td colspan="4" class="px-5 py-1">
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-red-600">Mandatory</span>
+                      </td>
+                    </tr>
+                    {{#let (rulesFor cls "violation") as |rules|}}
+                      {{#if rules.length}}
+                        {{#each rules as |rule|}}
+                          <tr class="hover:bg-zinc-50">
+                            <td class="px-5 py-2.5 font-mono text-xs text-zinc-700">{{shortLabel rule.ruleConstraint}}</td>
+                            <td class="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-xs font-semibold
+                              {{if (eq (compliancePct rule cls) 100) "text-green-700" "text-red-700"}}">
+                              {{compliant rule cls}} / {{cls.resourceCount}}
+                            </td>
+                            <td class="w-36 px-4 py-2.5">
+                              <div class="h-1.5 overflow-hidden rounded-full {{if (eq (compliancePct rule cls) 100) "bg-green-100" "bg-red-100"}}">
+                                <div class="h-full rounded-full {{if (eq (compliancePct rule cls) 100) "bg-green-500" "bg-red-500"}}" style={{barStyle rule cls}}></div>
+                              </div>
+                            </td>
+                            <td class="w-14 py-2.5 pr-5 text-right text-xs {{if (eq (compliancePct rule cls) 100) "font-semibold text-green-700" "text-zinc-400"}}">
+                              {{compliancePct rule cls}}%
+                            </td>
+                          </tr>
+                        {{/each}}
+                      {{else}}
+                        <tr>
+                          <td colspan="4" class="px-5 py-3 text-sm text-green-700">
+                            All {{cls.resourceCount}} resources comply with all mandatory constraints.
+                          </td>
+                        </tr>
+                      {{/if}}
+                    {{/let}}
 
-                  {{! ── Recommended (sh:Warning) ── }}
-                  {{#let (rulesFor cls "warning") as |rules|}}
-                    {{#if rules.length}}
-                      <div>
-                        <div class="bg-amber-50 px-5 py-1.5">
-                          <span class="text-[10px] font-bold uppercase tracking-widest text-amber-600">
-                            Recommended
-                          </span>
-                        </div>
-                        <table class="w-full text-sm">
-                          <tbody class="divide-y divide-zinc-50 bg-white">
-                            {{#each rules as |rule|}}
-                              <tr class="hover:bg-zinc-50">
-                                <td class="w-1/3 px-5 py-2.5 font-mono text-xs text-zinc-700">
-                                  {{shortLabel rule.ruleConstraint}}
-                                </td>
-                                <td class="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-xs font-semibold text-amber-700">
-                                  {{rule.violationCount}} / {{cls.resourceCount}}
-                                </td>
-                                <td class="w-36 px-4 py-2.5">
-                                  <div class="h-1.5 overflow-hidden rounded-full bg-amber-100">
-                                    <div class="h-full rounded-full bg-amber-400" style={{barStyle rule cls}}></div>
-                                  </div>
-                                </td>
-                                <td class="w-10 py-2.5 pr-5 text-right text-xs text-zinc-400">
-                                  {{pct rule cls}}%
-                                </td>
-                              </tr>
-                            {{/each}}
-                          </tbody>
-                        </table>
-                      </div>
-                    {{/if}}
-                  {{/let}}
+                    {{! ── Recommended ── }}
+                    {{#let (rulesFor cls "warning") as |rules|}}
+                      {{#if rules.length}}
+                        <tr class="bg-amber-50">
+                          <td colspan="4" class="px-5 py-1">
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-amber-600">Recommended</span>
+                          </td>
+                        </tr>
+                        {{#each rules as |rule|}}
+                          <tr class="hover:bg-zinc-50">
+                            <td class="px-5 py-2.5 font-mono text-xs text-zinc-700">{{shortLabel rule.ruleConstraint}}</td>
+                            <td class="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-xs font-semibold
+                              {{if (eq (compliancePct rule cls) 100) "text-green-700" "text-amber-700"}}">
+                              {{compliant rule cls}} / {{cls.resourceCount}}
+                            </td>
+                            <td class="w-36 px-4 py-2.5">
+                              <div class="h-1.5 overflow-hidden rounded-full {{if (eq (compliancePct rule cls) 100) "bg-green-100" "bg-amber-100"}}">
+                                <div class="h-full rounded-full {{if (eq (compliancePct rule cls) 100) "bg-green-500" "bg-amber-400"}}" style={{barStyle rule cls}}></div>
+                              </div>
+                            </td>
+                            <td class="w-14 py-2.5 pr-5 text-right text-xs {{if (eq (compliancePct rule cls) 100) "font-semibold text-green-700" "text-zinc-400"}}">
+                              {{compliancePct rule cls}}%
+                            </td>
+                          </tr>
+                        {{/each}}
+                      {{/if}}
+                    {{/let}}
 
-                  {{! ── Optional (sh:Info) — collapsible ── }}
-                  {{#let (rulesFor cls "info") as |rules|}}
-                    {{#if rules.length}}
-                      <details>
-                        <summary class="flex cursor-pointer list-none items-center gap-2 bg-zinc-50 px-5 py-1.5 hover:bg-zinc-100">
-                          <span class="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
-                            Optional
-                          </span>
-                          <span class="text-xs text-zinc-400">({{rules.length}} properties)</span>
-                          <span class="ml-auto text-xs text-zinc-300">▼</span>
-                        </summary>
-                        <table class="w-full text-sm">
-                          <tbody class="divide-y divide-zinc-50 bg-white">
-                            {{#each rules as |rule|}}
-                              <tr class="hover:bg-zinc-50">
-                                <td class="w-1/3 px-5 py-2.5 font-mono text-xs text-zinc-500">
-                                  {{shortLabel rule.ruleConstraint}}
-                                </td>
-                                <td class="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-xs font-medium text-zinc-500">
-                                  {{rule.violationCount}} / {{cls.resourceCount}}
-                                </td>
-                                <td class="w-36 px-4 py-2.5">
-                                  <div class="h-1.5 overflow-hidden rounded-full bg-zinc-200">
-                                    <div class="h-full rounded-full bg-zinc-400" style={{barStyle rule cls}}></div>
-                                  </div>
-                                </td>
-                                <td class="w-10 py-2.5 pr-5 text-right text-xs text-zinc-400">
-                                  {{pct rule cls}}%
-                                </td>
-                              </tr>
-                            {{/each}}
-                          </tbody>
-                        </table>
-                      </details>
-                    {{/if}}
-                  {{/let}}
+                    {{! ── Optional ── }}
+                    {{#let (rulesFor cls "info") as |rules|}}
+                      {{#if rules.length}}
+                        <tr class="bg-zinc-50">
+                          <td colspan="4" class="px-5 py-1">
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Optional</span>
+                          </td>
+                        </tr>
+                        {{#each rules as |rule|}}
+                          <tr class="hover:bg-zinc-50">
+                            <td class="px-5 py-2.5 font-mono text-xs text-zinc-500">{{shortLabel rule.ruleConstraint}}</td>
+                            <td class="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-xs font-medium
+                              {{if (eq (compliancePct rule cls) 100) "text-green-700" "text-zinc-500"}}">
+                              {{compliant rule cls}} / {{cls.resourceCount}}
+                            </td>
+                            <td class="w-36 px-4 py-2.5">
+                              <div class="h-1.5 overflow-hidden rounded-full {{if (eq (compliancePct rule cls) 100) "bg-green-100" "bg-zinc-200"}}">
+                                <div class="h-full rounded-full {{if (eq (compliancePct rule cls) 100) "bg-green-500" "bg-zinc-400"}}" style={{barStyle rule cls}}></div>
+                              </div>
+                            </td>
+                            <td class="w-14 py-2.5 pr-5 text-right text-xs {{if (eq (compliancePct rule cls) 100) "font-semibold text-green-700" "text-zinc-400"}}">
+                              {{compliancePct rule cls}}%
+                            </td>
+                          </tr>
+                        {{/each}}
+                      {{/if}}
+                    {{/let}}
 
-                </div>
+                  </tbody>
+                </table>
               {{/if}}
+              {{/let}}
             {{/if}}
 
           </div>
