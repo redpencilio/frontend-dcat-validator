@@ -4,11 +4,9 @@ const currentYear = new Date().getFullYear();
   <footer class="mt-24 bg-gradient-to-r from-zinc-100 to-zinc-50">
     <div class="container grid gap-10 py-12 md:grid-cols-3">
       <div class="space-y-4">
-        <img
-          src="/assets/vector/rpio-logo.svg"
-          alt="Red Pencil"
-          class="h-10 w-auto"
-        />
+            <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+          About us
+        </h4>
         <p class="max-w-sm text-sm text-zinc-600">
           Built by
           <a
@@ -16,7 +14,7 @@ const currentYear = new Date().getFullYear();
             target="_blank"
             rel="noopener"
             class="font-medium text-red-700 hover:text-red-600"
-          >Red Pencil</a>. We build interoperable, open-data platforms on the
+          >redpencil.io</a>. We build interoperable, open-data platforms on the
           semantic web.
         </p>
       </div>

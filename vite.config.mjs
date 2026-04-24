@@ -13,6 +13,10 @@ const LOCAL_PATHS = [
   /^\/node_modules\//,
   /^\/vendor\//,
   /^\/component-library/,
+  // Ember frontend routes
+  /^\/jobs\//,
+  /^\/reports\//,
+  /^\/about/,
 ];
 
 export default defineConfig({

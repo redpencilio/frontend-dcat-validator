@@ -38,7 +38,7 @@ import { pageTitle } from 'ember-page-title';
       <li>Per-dataset completeness score.</li>
     </ul>
 
-    <h2 class="mt-10 text-xl">Built by Red Pencil</h2>
+    <h2 class="mt-10 text-xl">Built by redpencil.io</h2>
     <p class="mt-3 text-zinc-700">
       Red Pencil builds semantic web applications. See
       <a

@@ -3,12 +3,13 @@ import { LinkTo } from '@ember/routing';
 import ProgressBar from 'rpio-dcat-validator/components/progress-bar';
 
 function statusOf(model) {
-  return (model?.status || '').toLowerCase();
+  const raw = model?.status || '';
+  return raw.split('/').at(-1).toLowerCase();
 }
 
 function isDone(model) {
   const s = statusOf(model);
-  return s === 'completed' || s === 'success';
+  return s === 'finished' || s === 'success';
 }
 
 function isFailed(model) {
@@ -27,7 +28,13 @@ function isFailed(model) {
       <span class="font-normal text-zinc-700">{{@model.endpointUrl}}</span>
     </h1>
 
-    {{#if (isDone @model)}}
+    {{#if @controller.errorMessage}}
+      <div class="card mt-8 border-red-200 bg-red-50">
+        <h2 class="text-lg text-red-800">Something went wrong</h2>
+        <p class="mt-2 text-sm text-red-700">{{@controller.errorMessage}}</p>
+        <LinkTo @route="index" class="btn-secondary mt-4">Back to start</LinkTo>
+      </div>
+    {{else if (isDone @model)}}
       <div class="card mt-8 border-green-200 bg-green-50 text-center">
         <h2 class="text-lg text-green-800">Validation complete</h2>
         <p class="mt-2 text-sm text-green-700">Redirecting to the report…</p>

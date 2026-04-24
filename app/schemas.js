@@ -20,7 +20,7 @@ export const validationJobSchema = {
       kind: 'resource',
       name: 'report',
       type: 'validation-reports',
-      options: { async: true, inverse: 'job' },
+      options: { async: true, inverse: null },
     },
   ],
 };
@@ -45,14 +45,14 @@ export const validationReportSchema = {
     {
       kind: 'resource',
       name: 'job',
-      type: 'validation-jobs',
-      options: { async: true, inverse: 'report' },
+      type: 'jobs',
+      options: { async: true, inverse: null },
     },
     {
       kind: 'collection',
       name: 'violations',
       type: 'violations',
-      options: { async: true, inverse: 'report' },
+      options: { async: true, inverse: null },
     },
   ],
 };
@@ -72,7 +72,7 @@ export const violationSchema = {
       kind: 'resource',
       name: 'report',
       type: 'validation-reports',
-      options: { async: true, inverse: 'violations' },
+      options: { async: true, inverse: null },
     },
   ],
 };
