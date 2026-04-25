@@ -4,13 +4,34 @@ import { on } from '@ember/modifier';
 import { fn } from '@ember/helper';
 import { htmlSafe } from '@ember/template';
 
+const PREFIX_MAP = [
+  ['adms',   'http://www.w3.org/ns/adms#'],
+  ['cnt',    'http://www.w3.org/2011/content#'],
+  ['dcat',   'http://www.w3.org/ns/dcat#'],
+  ['dcatap',         'http://data.europa.eu/r5r/'],
+  ['mobilitydcatap', 'https://w3id.org/mobilitydcat-ap#'],
+  ['dct',    'http://purl.org/dc/terms/'],
+  ['dqv',    'http://www.w3.org/ns/dqv#'],
+  ['foaf',   'http://xmlns.com/foaf/0.1/'],
+  ['locn',   'http://www.w3.org/ns/locn#'],
+  ['oa',     'https://www.w3.org/ns/oa#'],
+  ['org',    'http://www.w3.org/ns/org#'],
+  ['owl',    'http://www.w3.org/2002/07/owl#'],
+  ['rdf',    'http://www.w3.org/1999/02/22-rdf-syntax-ns#'],
+  ['rdfs',   'http://www.w3.org/2000/01/rdf-schema#'],
+  ['skos',   'http://www.w3.org/2004/02/skos/core#'],
+  ['spdx',   'http://spdx.org/rdf/terms#'],
+  ['vcard',  'http://www.w3.org/2006/vcard/ns#'],
+  ['xsd',    'http://www.w3.org/2001/XMLSchema#'],
+];
+
 function shortLabel(uri) {
   if (!uri) return '—';
+  for (const [prefix, ns] of PREFIX_MAP) {
+    if (uri.startsWith(ns)) return `${prefix}:${uri.slice(ns.length)}`;
+  }
   const local = uri.includes('#') ? uri.split('#').at(-1) : uri.split('/').at(-1);
-  const ns = uri.includes('#')
-    ? uri.split('#')[0].split('/').at(-1)
-    : uri.split('/').at(-2);
-  return ns ? `${ns}:${local}` : local;
+  return local || uri;
 }
 
 function eq(a, b) {
@@ -89,7 +110,7 @@ function formatDate(d) {
 <template>
   {{pageTitle "Validation Report"}}
 
-  <article class="container max-w-4xl py-12 print:py-6">
+  <article class="container py-12 print:py-6">
     {{#if @controller.errorMessage}}
       <div class="card border-red-200 bg-red-50">
         <h2 class="text-lg text-red-800">Something went wrong</h2>
@@ -100,7 +121,11 @@ function formatDate(d) {
       {{! ── Report header ── }}
       <header class="border-b-2 border-zinc-900 pb-8">
         <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">
-          DCAT-AP Mobility
+          <a href="https://mobilitydcat-ap.github.io/mobilityDCAT-AP/releases/1.1.0/index.html"
+             target="_blank" rel="noopener noreferrer"
+             class="hover:text-zinc-600 hover:underline">
+            DCAT-AP Mobility 1.1.0
+          </a>
         </p>
         <h1 class="mt-1 text-4xl font-bold tracking-tight text-zinc-900">
           Validation Report
@@ -140,7 +165,7 @@ function formatDate(d) {
             >
               <div class="min-w-0 flex-1">
                 <span class="font-semibold text-zinc-900">{{shortLabel cls.targetClass}}</span>
-                <span class="ml-2.5 text-xs text-zinc-400">{{cls.targetClass}}</span>
+                <span class="block truncate text-xs text-zinc-400">{{cls.targetClass}}</span>
               </div>
               <span class="shrink-0 text-sm text-zinc-500">
                 <span class="font-semibold text-zinc-700">{{cls.resourceCount}}</span> resources
@@ -150,39 +175,26 @@ function formatDate(d) {
                 (severityViolations cls "warning")
                 (severityViolations cls "info")
               as |mandatory recommended optional|}}
-                {{#if (eq mandatory 0)}}
-                  {{#if (eq recommended 0)}}
-                    {{#if (eq optional 0)}}
-                      <span class="shrink-0 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">
-                        Compliant
-                      </span>
-                    {{else}}
-                      <span class="shrink-0 rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-semibold text-zinc-600">
-                        {{optional}} optional
-                      </span>
-                    {{/if}}
-                  {{else}}
-                    <span class="shrink-0 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
-                      {{recommended}} recommended
-                    </span>
-                    {{#if optional}}
-                      <span class="shrink-0 rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-semibold text-zinc-600">
-                        {{optional}} optional
-                      </span>
-                    {{/if}}
-                  {{/if}}
-                {{else}}
+                {{#if (eq cls.resourceCount 0)}}
                   <span class="shrink-0 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800">
-                    {{mandatory}} mandatory
+                    No resources
+                  </span>
+                {{else if (eq mandatory 0)}}
+                  <span class="shrink-0 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">
+                    {{if (eq recommended 0) "Compliant" "Mandatory compliant"}}
                   </span>
                   {{#if recommended}}
                     <span class="shrink-0 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
-                      {{recommended}} recommended
+                      {{recommended}} recommended violations
                     </span>
                   {{/if}}
-                  {{#if optional}}
-                    <span class="shrink-0 rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-semibold text-zinc-600">
-                      {{optional}} optional
+                {{else}}
+                  <span class="shrink-0 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800">
+                    {{mandatory}} mandatory violations
+                  </span>
+                  {{#if recommended}}
+                    <span class="shrink-0 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+                      {{recommended}} recommended violations
                     </span>
                   {{/if}}
                 {{/if}}
@@ -199,9 +211,9 @@ function formatDate(d) {
                 (severityViolations cls "warning")
                 (severityViolations cls "info")
               as |mandatory recommended optional|}}
-              {{#if (eq (sum mandatory recommended optional) 0)}}
-                <div class="border-t border-zinc-100 px-5 py-5 text-sm text-green-700">
-                  All {{cls.resourceCount}} resources fully comply with all constraints for this class.
+              {{#if (eq cls.resourceCount 0)}}
+                <div class="border-t border-zinc-100 px-5 py-5 text-sm text-red-700">
+                  No resources found for this class.
                 </div>
               {{else}}
                 <table class="w-full border-t border-zinc-200 text-sm">
@@ -216,16 +228,16 @@ function formatDate(d) {
                   <tbody class="divide-y divide-zinc-50 bg-white">
 
                     {{! ── Mandatory ── }}
-                    <tr class="bg-red-50">
-                      <td colspan="4" class="px-5 py-1">
-                        <span class="text-[10px] font-bold uppercase tracking-widest text-red-600">Mandatory</span>
-                      </td>
-                    </tr>
                     {{#let (rulesFor cls "violation") as |rules|}}
                       {{#if rules.length}}
+                        <tr class="bg-red-50">
+                          <td colspan="4" class="px-5 py-1">
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-red-600">Mandatory</span>
+                          </td>
+                        </tr>
                         {{#each rules as |rule|}}
                           <tr class="hover:bg-zinc-50">
-                            <td class="px-5 py-2.5 font-mono text-xs text-zinc-700">{{shortLabel rule.ruleConstraint}}</td>
+                            <td class="px-5 py-2.5 font-mono text-xs text-zinc-700"><abbr title={{rule.ruleConstraint}}>{{shortLabel rule.ruleConstraint}}</abbr></td>
                             <td class="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-xs font-semibold
                               {{if (eq (compliancePct rule cls) 100) "text-green-700" "text-red-700"}}">
                               {{compliant rule cls}} / {{cls.resourceCount}}
@@ -240,12 +252,6 @@ function formatDate(d) {
                             </td>
                           </tr>
                         {{/each}}
-                      {{else}}
-                        <tr>
-                          <td colspan="4" class="px-5 py-3 text-sm text-green-700">
-                            All {{cls.resourceCount}} resources comply with all mandatory constraints.
-                          </td>
-                        </tr>
                       {{/if}}
                     {{/let}}
 
@@ -259,7 +265,7 @@ function formatDate(d) {
                         </tr>
                         {{#each rules as |rule|}}
                           <tr class="hover:bg-zinc-50">
-                            <td class="px-5 py-2.5 font-mono text-xs text-zinc-700">{{shortLabel rule.ruleConstraint}}</td>
+                            <td class="px-5 py-2.5 font-mono text-xs text-zinc-700"><abbr title={{rule.ruleConstraint}}>{{shortLabel rule.ruleConstraint}}</abbr></td>
                             <td class="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-xs font-semibold
                               {{if (eq (compliancePct rule cls) 100) "text-green-700" "text-amber-700"}}">
                               {{compliant rule cls}} / {{cls.resourceCount}}
@@ -287,7 +293,7 @@ function formatDate(d) {
                         </tr>
                         {{#each rules as |rule|}}
                           <tr class="hover:bg-zinc-50">
-                            <td class="px-5 py-2.5 font-mono text-xs text-zinc-500">{{shortLabel rule.ruleConstraint}}</td>
+                            <td class="px-5 py-2.5 font-mono text-xs text-zinc-500"><abbr title={{rule.ruleConstraint}}>{{shortLabel rule.ruleConstraint}}</abbr></td>
                             <td class="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-xs font-medium
                               {{if (eq (compliancePct rule cls) 100) "text-green-700" "text-zinc-500"}}">
                               {{compliant rule cls}} / {{cls.resourceCount}}
