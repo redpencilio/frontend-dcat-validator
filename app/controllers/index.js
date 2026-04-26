@@ -24,6 +24,16 @@ const KNOWN_ENDPOINTS = [
     label: 'mobilitydata.gv.at',
     url: 'https://www.mobilitydata.gv.at/api/mobility_dcat/en',
   },
+  {
+    country: 'Sweden',
+    label: 'trafficdata.se',
+    url: 'https://trafficdata.se/catalog.xml',
+  },
+  {
+    country: 'Denmark',
+    label: 'dataudveksler.app.vd.dk',
+    url: 'https://businessservice.dataudveksler.app.vd.dk/api/Metadata?format=dcat',
+  },
 ];
 
 function humanizeSeconds(s) {

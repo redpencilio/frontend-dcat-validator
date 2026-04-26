@@ -9,7 +9,12 @@ export const validationJobSchema = {
     { kind: 'field', name: 'pagesFetched', sourceKey: 'pages-fetched' },
     { kind: 'field', name: 'totalPages', sourceKey: 'total-pages' },
     { kind: 'field', name: 'datasetsFound', sourceKey: 'datasets-found' },
-    { kind: 'field', name: 'errorMessage', sourceKey: 'error-message' },
+    {
+      kind: 'resource',
+      name: 'error',
+      type: 'job-errors',
+      options: { async: false, inverse: null },
+    },
     { kind: 'field', name: 'cached' },
     {
       kind: 'field',
@@ -118,10 +123,20 @@ export const endpointSchema = {
   ],
 };
 
+export const jobErrorSchema = {
+  type: 'job-errors',
+  identity: { kind: '@id', name: 'id' },
+  fields: [
+    { kind: 'field', name: 'message' },
+    { kind: 'field', name: 'uri' },
+  ],
+};
+
 export const schemas = [
   validationJobSchema,
   validationSummarySchema,
   targetClassSummarySchema,
   ruleSummarySchema,
   endpointSchema,
+  jobErrorSchema,
 ];

@@ -29,7 +29,7 @@ export default class JobRoute extends Route {
       const { content } = await this.store.request(
         findRecord('validation-job', params.job_id, {
           reload: true,
-          include: ['coverage-report'],
+          include: ['coverage-report', 'error'],
         }),
       );
       return content.data;
@@ -41,7 +41,21 @@ export default class JobRoute extends Route {
 
   setupController(controller, model) {
     super.setupController(controller, model);
-    controller.errorMessage = this.#loadError;
+    if (this.#loadError) {
+      controller.errorMessage = this.#loadError;
+    } else if (model) {
+      const status = (model.status || '').split('/').at(-1).toLowerCase();
+      if (status === 'failed' || status === 'error') {
+        controller.errorMessage = this.#jobErrorMessage(model) || 'Something went wrong while validating this catalog.';
+      }
+    }
+  }
+
+  #jobErrorMessage(job) {
+    const errorId = job['error']?.data?.id;
+    if (!errorId) return null;
+    const record = this.store.peekRecord('job-errors', errorId);
+    return record?.message || null;
   }
 
   activate() {
@@ -68,7 +82,7 @@ export default class JobRoute extends Route {
       const { content } = await this.store.request(
         findRecord('validation-job', this.#currentId, {
           reload: true,
-          include: ['coverage-report'],
+          include: ['coverage-report', 'error'],
         }),
       );
       const job = content.data;
@@ -82,6 +96,7 @@ export default class JobRoute extends Route {
       }
 
       if (status === 'failed' || status === 'error') {
+        this.controller.errorMessage = this.#jobErrorMessage(job) || 'Something went wrong while validating this catalog.';
         return;
       }
     } catch (err) {

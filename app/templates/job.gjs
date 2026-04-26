@@ -42,8 +42,8 @@ function isFailed(model) {
     {{else if (isFailed @model)}}
       <div class="card mt-8 border-red-200 bg-red-50">
         <h2 class="text-lg text-red-800">Validation failed</h2>
-        {{#if @model.errorMessage}}
-          <p class="mt-2 text-sm text-red-700">{{@model.errorMessage}}</p>
+        {{#if @model.error.message}}
+          <p class="mt-2 text-sm text-red-700">{{@model.error.message}}</p>
         {{else}}
           <p class="mt-2 text-sm text-red-700">
             Something went wrong while validating this catalog.
