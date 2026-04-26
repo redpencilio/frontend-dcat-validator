@@ -41,6 +41,7 @@ export default class JobRoute extends Route {
 
   setupController(controller, model) {
     super.setupController(controller, model);
+    controller.errorMessage = null;
     if (this.#loadError) {
       controller.errorMessage = this.#loadError;
     } else if (model) {
