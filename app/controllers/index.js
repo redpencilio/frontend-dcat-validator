@@ -10,9 +10,24 @@ import {
 
 const KNOWN_ENDPOINTS = [
   {
+    country: 'Austria',
+    label: 'mobilitydata.gv.at',
+    url: 'https://www.mobilitydata.gv.at/api/mobility_dcat/en',
+  },
+  {
     country: 'Belgium',
     label: 'transportdata.be',
     url: 'https://transportdata.be/catalog.ttl',
+  },
+  {
+    country: 'Denmark',
+    label: 'dataudveksler.app.vd.dk',
+    url: 'https://businessservice.dataudveksler.app.vd.dk/api/Metadata?format=dcat',
+  },
+  {
+    country: 'Finland',
+    label: 'catalog.digitraffic.fi',
+    url: ' https://catalog.digitraffic.fi/en/catalog.ttl'
   },
   {
     country: 'Germany',
@@ -20,21 +35,16 @@ const KNOWN_ENDPOINTS = [
     url: 'https://mobilithek.info/mobilithek/api/v1.0/export/datasets/mobilitydcatap',
   },
   {
-    country: 'Austria',
-    label: 'mobilitydata.gv.at',
-    url: 'https://www.mobilitydata.gv.at/api/mobility_dcat/en',
+    country: 'Latvia',
+    label: 'transportdata.gov.lv',
+    url: 'https://www.transportdata.gov.lv/api/v1/subscriber/metadata_dcat',
   },
   {
     country: 'Sweden',
     label: 'trafficdata.se',
     url: 'https://trafficdata.se/catalog.xml',
   },
-  {
-    country: 'Denmark',
-    label: 'dataudveksler.app.vd.dk',
-    url: 'https://businessservice.dataudveksler.app.vd.dk/api/Metadata?format=dcat',
-  },
-];
+].sort((a, b) => a.country.localeCompare(b.country));
 
 function humanizeSeconds(s) {
   if (!s || s < 1) return 'a moment';

@@ -42,6 +42,11 @@ const currentYear = new Date().getFullYear();
               href="https://github.com/redpencilio/mobilitydcatap-study"
               target="_blank" rel="noopener noreferrer" class="hover:text-zinc-900"
             ><em>mobilityDCAT-AP in practice</em> (ITS Europe 2026)</a></li>
+           <li><a
+              href="https://github.com/mobilityDCAT-AP/adopters/blob/main/README.md"
+              target="_blank" rel="noopener noreferrer" class="hover:text-zinc-900"
+            >mobilityDCAT-AP adopters</a></li>
+
           <li><a
               href="https://github.com/mobilityDCAT-AP/mobilityDCAT-AP"
               target="_blank" rel="noopener noreferrer" class="hover:text-zinc-900"
