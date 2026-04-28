@@ -1,4 +1,5 @@
 import { pageTitle } from 'ember-page-title';
+import { LinkTo } from '@ember/routing';
 import { on } from '@ember/modifier';
 import { fn } from '@ember/helper';
 
@@ -41,6 +42,9 @@ import { fn } from '@ember/helper';
 
       {{#if @controller.errorMessage}}
         <p class="mt-3 text-sm text-red-700">{{@controller.errorMessage}}</p>
+        {{#if @controller.latestReportId}}
+          <LinkTo @route="report" @model={{@controller.latestReportId}} class="btn-secondary mt-3 inline-block">View previous report</LinkTo>
+        {{/if}}
       {{/if}}
 
       <div class="mt-10 text-left">

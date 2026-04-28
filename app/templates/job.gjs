@@ -32,7 +32,12 @@ function isFailed(model) {
       <div class="card mt-8 border-red-200 bg-red-50">
         <h2 class="text-lg text-red-800">Something went wrong</h2>
         <p class="mt-2 text-sm text-red-700">{{@controller.errorMessage}}</p>
-        <LinkTo @route="index" class="btn-secondary mt-4">Back to start</LinkTo>
+        <div class="mt-4 flex gap-3">
+          <LinkTo @route="index" class="btn-secondary">Back to start</LinkTo>
+          {{#if @controller.latestReportId}}
+            <LinkTo @route="report" @model={{@controller.latestReportId}} class="btn-secondary">View previous report</LinkTo>
+          {{/if}}
+        </div>
       </div>
     {{else if (isDone @model)}}
       <div class="card mt-8 border-green-200 bg-green-50 text-center">
@@ -49,9 +54,12 @@ function isFailed(model) {
             Something went wrong while validating this catalog.
           </p>
         {{/if}}
-        <LinkTo @route="index" class="btn-secondary mt-4">
-          Back to start
-        </LinkTo>
+        <div class="mt-4 flex gap-3">
+          <LinkTo @route="index" class="btn-secondary">Back to start</LinkTo>
+          {{#if @controller.latestReportId}}
+            <LinkTo @route="report" @model={{@controller.latestReportId}} class="btn-secondary">View previous report</LinkTo>
+          {{/if}}
+        </div>
       </div>
     {{else}}
       <div class="card mt-8">
@@ -71,6 +79,13 @@ function isFailed(model) {
         <p class="mt-4 text-xs text-zinc-500">
           Page refreshes automatically. You can safely leave this tab open.
         </p>
+
+        {{#if @controller.latestReportId}}
+          <p class="mt-4 text-xs text-zinc-500">
+            While you wait:
+            <LinkTo @route="report" @model={{@controller.latestReportId}} class="text-red-700 hover:underline">view the previous report</LinkTo>.
+          </p>
+        {{/if}}
       </div>
     {{/if}}
   </section>
