@@ -7,7 +7,7 @@ import {
   createRecord,
   serializeResources,
 } from '@warp-drive/utilities/json-api';
-import { fetchLatestReportId } from 'rpio-dcat-validator/utils/fetch-latest-report';
+import { fetchLatestReport } from 'rpio-dcat-validator/utils/fetch-latest-report';
 
 const KNOWN_ENDPOINTS = [
   {
@@ -140,8 +140,8 @@ export default class IndexController extends Controller {
     } catch (err) {
       this.errorMessage = friendlyError(err);
       this.submitting = false;
-      fetchLatestReportId(this.endpointUrl).then((id) => {
-        this.latestReportId = id;
+      fetchLatestReport(this.endpointUrl).then((latest) => {
+        this.latestReportId = latest?.id ?? null;
       });
     }
   }

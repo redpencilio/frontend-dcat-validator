@@ -148,6 +148,20 @@ function formatDate(d) {
         </p>
       </header>
 
+      {{#if @controller.latestReportId}}
+        <div class="mt-6 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-5 py-3 text-sm text-amber-800">
+          <span>
+            A newer report is available
+            {{#let (formatDate @controller.latestReportDate) as |d|}}
+              {{#if d}} from {{d}}{{/if}}
+            {{/let}}.
+          </span>
+          <LinkTo @route="report" @model={{@controller.latestReportId}} class="font-semibold underline hover:text-amber-900">
+            View latest report
+          </LinkTo>
+        </div>
+      {{/if}}
+
       {{! ── Coverage ── }}
       <section class="mt-10">
         <h2 class="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">

@@ -1,6 +1,7 @@
 import Route from '@ember/routing/route';
 import { service } from '@ember/service';
 import { findRecord } from '@warp-drive/utilities/json-api';
+import { fetchLatestReport } from 'rpio-dcat-validator/utils/fetch-latest-report';
 
 function friendlyError(err) {
   const status = err?.status ?? err?.response?.status;
@@ -36,6 +37,16 @@ export default class ReportRoute extends Route {
     controller.errorMessage = this.#loadError;
     controller.expandedGroup = null;
     controller.reportDate = null;
+    controller.latestReportId = null;
+    controller.latestReportDate = null;
+    if (model?.endpointUrl) {
+      fetchLatestReport(model.endpointUrl).then((latest) => {
+        if (latest?.id && latest.id !== model.id) {
+          controller.latestReportId = latest.id;
+          controller.latestReportDate = latest.date;
+        }
+      });
+    }
     const jobId = model?.['coverage-job']?.data?.id;
     if (jobId) {
       try {
