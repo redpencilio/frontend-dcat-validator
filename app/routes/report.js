@@ -22,7 +22,14 @@ export default class ReportRoute extends Route {
       const { content } = await this.store.request(
         findRecord('validation-summary', params.report_id, {
           reload: true,
-          include: ['coverage-job', 'target-class-summaries', 'target-class-summaries.rule-summaries'],
+          include: [
+            'coverage-job',
+            'target-class-summaries',
+            'target-class-summaries.rule-summaries',
+            'coverage-job.vocabulary-report',
+            'coverage-job.vocabulary-report.target-class-summaries',
+            'coverage-job.vocabulary-report.target-class-summaries.rule-summaries',
+          ],
         }),
       );
       return content.data;
@@ -48,10 +55,15 @@ export default class ReportRoute extends Route {
       });
     }
     const jobId = model?.['coverage-job']?.data?.id;
+    controller.vocabReport = null;
     if (jobId) {
       try {
         const job = this.store.peekRecord('validation-jobs', jobId);
         controller.reportDate = job?.modifiedAt ?? job?.createdAt ?? null;
+        const vocabId = job?.['vocabulary-report']?.data?.id;
+        if (vocabId) {
+          controller.vocabReport = this.store.peekRecord('validation-summaries', vocabId);
+        }
       } catch {
         // date unavailable
       }

@@ -1,7 +1,7 @@
 import { pageTitle } from 'ember-page-title';
 import { LinkTo } from '@ember/routing';
 import { on } from '@ember/modifier';
-import { fn } from '@ember/helper';
+import { fn, get } from '@ember/helper';
 import { htmlSafe } from '@ember/template';
 
 const PREFIX_MAP = [
@@ -36,6 +36,10 @@ function shortLabel(uri) {
 
 function eq(a, b) {
   return a === b;
+}
+
+function isNotLast(index, array) {
+  return index < array.length - 1;
 }
 
 function totalResources(summaries) {
@@ -106,6 +110,15 @@ function formatDate(d) {
     return null;
   }
 }
+
+function splitToArray(string, splitter, mapfn) {
+  let res = string.split(splitter)
+  if (mapfn) {
+    res = res.map(item => mapfn(item))
+  }
+  return res
+}
+
 
 <template>
   {{pageTitle "Validation Report"}}
@@ -252,8 +265,7 @@ function formatDate(d) {
                         {{#each rules as |rule|}}
                           <tr class="hover:bg-zinc-50">
                             <td class="px-5 py-2.5 font-mono text-xs text-zinc-700"><abbr title={{rule.ruleConstraint}}>{{shortLabel rule.ruleConstraint}}</abbr></td>
-                            <td class="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-xs font-semibold
-                              {{if (eq (compliancePct rule cls) 100) "text-green-700" "text-red-700"}}">
+                            <td class="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-xs font-semibold {{if (eq (compliancePct rule cls) 100) "text-green-700" "text-red-700"}}">
                               {{compliant rule cls}} / {{cls.resourceCount}}
                             </td>
                             <td class="w-36 px-4 py-2.5">
@@ -265,6 +277,7 @@ function formatDate(d) {
                               {{compliancePct rule cls}}%
                             </td>
                           </tr>
+
                         {{/each}}
                       {{/if}}
                     {{/let}}
@@ -307,7 +320,7 @@ function formatDate(d) {
                         </tr>
                         {{#each rules as |rule|}}
                           <tr class="hover:bg-zinc-50">
-                            <td class="px-5 py-2.5 font-mono text-xs text-zinc-500"><abbr title={{rule.ruleConstraint}}>{{shortLabel rule.ruleConstraint}}</abbr></td>
+                            <td class="px-5 py-2.5 font-mono text-xs text-zinc-700"><abbr title={{rule.ruleConstraint}}>{{shortLabel rule.ruleConstraint}}</abbr></td>
                             <td class="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-xs font-medium
                               {{if (eq (compliancePct rule cls) 100) "text-green-700" "text-zinc-500"}}">
                               {{compliant rule cls}} / {{cls.resourceCount}}
@@ -333,6 +346,235 @@ function formatDate(d) {
 
           </div>
         {{/each}}
+      </section>
+      {{! ── Vocabulary (debug) ── }}
+      <section class="mt-10">
+        <h2 class="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">
+          Vocabulary Compliance
+        </h2>
+        {{#each  (sortedClasses @controller.vocabReport.targetClassSummaries) as |cls|}}
+          <div class="mt-3 overflow-hidden rounded-lg border border-zinc-200">
+
+            {{! Class accordion header }}
+            <button
+              type="button"
+              class="group flex w-full items-center gap-4 bg-zinc-50 px-5 py-3.5 text-left hover:bg-zinc-100"
+              {{on "click" (fn @controller.toggleGroup cls.id)}}
+            >
+              <div class="min-w-0 flex-1">
+                <span class="font-semibold text-zinc-900">{{shortLabel cls.targetClass}}</span>
+                <span class="block truncate text-xs text-zinc-400">{{cls.targetClass}}</span>
+              </div>
+              <span class="shrink-0 text-sm text-zinc-500">
+                <span class="font-semibold text-zinc-700">{{cls.resourceCount}}</span> resources
+              </span>
+              {{#let
+                (severityViolations cls "violation")
+                (severityViolations cls "warning")
+                (severityViolations cls "info")
+              as |mandatory recommended optional|}}
+                {{#if (eq cls.resourceCount 0)}}
+                  <span class="shrink-0 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800">
+                    No resources
+                  </span>
+                {{else if (eq mandatory 0)}}
+                  <span class="shrink-0 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">
+                    {{if (eq recommended 0) "Compliant" "Mandatory compliant"}}
+                  </span>
+                  {{#if recommended}}
+                    <span class="shrink-0 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+                      {{recommended}} recommended violations
+                    </span>
+                  {{/if}}
+                {{else}}
+                  <span class="shrink-0 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800">
+                    {{mandatory}} mandatory violations
+                  </span>
+                  {{#if recommended}}
+                    <span class="shrink-0 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+                      {{recommended}} recommended violations
+                    </span>
+                  {{/if}}
+                {{/if}}
+              {{/let}}
+              <span class="shrink-0 text-zinc-300 group-hover:text-zinc-500">
+                {{if (eq @controller.expandedGroup cls.id) "▲" "▼"}}
+              </span>
+            </button>
+            {{#if (eq @controller.expandedGroup cls.id)}}
+              {{#let
+                (severityViolations cls "violation")
+                (severityViolations cls "warning")
+                (severityViolations cls "info")
+              as |mandatory recommended optional|}}
+              {{#if (eq cls.resourceCount 0)}}
+                <div class="border-t border-zinc-100 px-5 py-5 text-sm text-red-700">
+                  No resources found for this class.
+                </div>
+              {{else}}
+                <table class="w-full border-t border-zinc-200 text-sm">
+                  <thead>
+                    <tr class="border-b border-zinc-100 bg-white">
+                      <th class="px-5 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Property</th>
+                      <th class="px-4 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Compliant</th>
+                      <th class="w-36"></th>
+                      <th class="w-14 pr-5 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Score</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-zinc-50 bg-white">
+
+                    {{! ── Mandatory ── }}
+                    {{#let (rulesFor cls "violation") as |rules|}}
+                      {{#if rules.length}}
+                        <tr class="bg-red-50">
+                          <td colspan="4" class="px-5 py-1">
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-red-600">Mandatory</span>
+                          </td>
+                        </tr>
+                        {{#each rules as |rule|}}
+                          <tr class="hover:bg-zinc-50">
+                            <td class="px-5 py-2.5 text-xs text-zinc-700">
+                              <div class="font-mono"><abbr title={{rule.ruleConstraint}}>{{shortLabel rule.ruleConstraint}}</abbr></div>
+                              {{#if rule.message}}
+                                <div class="mt-0.5 text-[11px] text-zinc-400">
+                                {{#let (splitToArray rule.message ', ') as |invalid_terms|}}
+                                  {{if (eq invalid_terms.length 1) "Invalid term:" "Invalid terms:"}}
+                                  {{#each invalid_terms as |invalid_term index|}}
+                                      <span class="mb-1 inline-block rounded bg-transparent px-1.5 py-0.5 font-mono text-red-600 transition-colors hover:bg-red-50 cursor-help" title={{invalid_term}}>{{shortLabel invalid_term}}</span>{{if (isNotLast index invalid_terms) ", "}}
+                                  {{/each}}
+                                {{/let}}
+                                </div>
+                              {{/if}}
+                            </td>
+                            <td class="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-xs font-semibold
+                              {{if (eq (compliancePct rule cls) 100) "text-green-700" "text-red-700"}}">
+                              {{compliant rule cls}} / {{cls.resourceCount}}
+                            </td>
+                            <td class="w-36 px-4 py-2.5">
+                              <div class="h-1.5 overflow-hidden rounded-full {{if (eq (compliancePct rule cls) 100) "bg-green-100" "bg-red-100"}}">
+                                <div class="h-full rounded-full {{if (eq (compliancePct rule cls) 100) "bg-green-500" "bg-red-500"}}" style={{barStyle rule cls}}></div>
+                              </div>
+                            </td>
+                            <td class="w-14 py-2.5 pr-5 text-right text-xs {{if (eq (compliancePct rule cls) 100) "font-semibold text-green-700" "text-zinc-400"}}">
+                              {{compliancePct rule cls}}%
+                            </td>
+                          </tr>
+                        {{/each}}
+                      {{/if}}
+                    {{/let}}
+
+                    {{! ── Recommended ── }}
+                    {{#let (rulesFor cls "warning") as |rules|}}
+                      {{#if rules.length}}
+                        <tr class="bg-amber-50">
+                          <td colspan="4" class="px-5 py-1">
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-amber-600">Recommended</span>
+                          </td>
+                        </tr>
+                        {{#each rules as |rule|}}
+                          <tr class="hover:bg-zinc-50">
+                            <td class="px-5 py-2.5 text-xs text-zinc-700">
+                              <div class="font-mono"><abbr title={{rule.ruleConstraint}}>{{shortLabel rule.ruleConstraint}}</abbr></div>
+                              {{#if rule.message}}
+                                <div class="mt-0.5 text-[11px] text-zinc-400">
+                                {{#let (splitToArray rule.message ', ') as |invalid_terms|}}
+                                  {{if (eq invalid_terms.length 1) "Invalid term:" "Invalid terms:"}}
+                                  {{#each invalid_terms as |invalid_term index|}}
+                                      <span class="mb-1 inline-block rounded bg-transparent px-1.5 py-0.5 font-mono text-red-600 transition-colors hover:bg-red-50 cursor-help" title={{invalid_term}}>{{shortLabel invalid_term}}</span>{{if (isNotLast index invalid_terms) ", "}}
+                                  {{/each}}
+                                {{/let}}
+                                </div>
+                              {{/if}}
+                            </td>
+                            <td class="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-xs font-semibold
+                              {{if (eq (compliancePct rule cls) 100) "text-green-700" "text-amber-700"}}">
+                              {{compliant rule cls}} / {{cls.resourceCount}}
+                            </td>
+                            <td class="w-36 px-4 py-2.5">
+                              <div class="h-1.5 overflow-hidden rounded-full {{if (eq (compliancePct rule cls) 100) "bg-green-100" "bg-amber-100"}}">
+                                <div class="h-full rounded-full {{if (eq (compliancePct rule cls) 100) "bg-green-500" "bg-amber-400"}}" style={{barStyle rule cls}}></div>
+                              </div>
+                            </td>
+                            <td class="w-14 py-2.5 pr-5 text-right text-xs {{if (eq (compliancePct rule cls) 100) "font-semibold text-green-700" "text-zinc-400"}}">
+                              {{compliancePct rule cls}}%
+                            </td>
+                          </tr>
+                        {{/each}}
+                      {{/if}}
+                    {{/let}}
+
+                    {{! ── Optional ── }}
+                    {{#let (rulesFor cls "info") as |rules|}}
+                      {{#if rules.length}}
+                        <tr class="bg-zinc-50">
+                          <td colspan="4" class="px-5 py-1">
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Optional</span>
+                          </td>
+                        </tr>
+                        {{#each rules as |rule|}}
+                          <tr class="hover:bg-zinc-50">
+                            <td class="px-5 py-2.5 text-xs text-zinc-700">
+                              <div class="font-mono"><abbr title={{rule.ruleConstraint}}>{{shortLabel rule.ruleConstraint}}</abbr></div>
+                              {{#if rule.message}}
+                                <div class="mt-0.5 text-[11px] text-zinc-400">
+                                {{#let (splitToArray rule.message ', ') as |invalid_terms|}}
+                                  {{if (eq invalid_terms.length 1) "Invalid term:" "Invalid terms:"}}
+                                  {{#each invalid_terms as |invalid_term index|}}
+                                      <span class="mb-1 inline-block rounded bg-transparent px-1.5 py-0.5 font-mono text-red-600 transition-colors hover:bg-red-50 cursor-help" title={{invalid_term}}>{{shortLabel invalid_term}}</span>{{if (isNotLast index invalid_terms) ", "}}
+                                  {{/each}}
+                                {{/let}}
+                                </div>
+                              {{/if}}
+                            </td>
+                            <td class="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-xs font-medium
+                              {{if (eq (compliancePct rule cls) 100) "text-green-700" "text-zinc-500"}}">
+                              {{compliant rule cls}} / {{cls.resourceCount}}
+                            </td>
+                            <td class="w-36 px-4 py-2.5">
+                              <div class="h-1.5 overflow-hidden rounded-full {{if (eq (compliancePct rule cls) 100) "bg-green-100" "bg-zinc-200"}}">
+                                <div class="h-full rounded-full {{if (eq (compliancePct rule cls) 100) "bg-green-500" "bg-zinc-400"}}" style={{barStyle rule cls}}></div>
+                              </div>
+                            </td>
+                            <td class="w-14 py-2.5 pr-5 text-right text-xs {{if (eq (compliancePct rule cls) 100) "font-semibold text-green-700" "text-zinc-400"}}">
+                              {{compliancePct rule cls}}%
+                            </td>
+                          </tr>
+                        {{/each}}
+                      {{/if}}
+                    {{/let}}
+
+                  </tbody>
+                </table>
+              {{/if}}
+              {{/let}}
+            {{/if}}
+
+          </div>
+        {{/each}}
+        {{#if @controller.vocabReport}}
+          <p class="mt-2 text-sm text-zinc-700">
+            ✅ Vocabulary report loaded — total violations:
+            <strong>{{@controller.vocabReport.totalViolations}}</strong>
+          </p>
+          {{#each @controller.vocabReport.targetClassSummaries as |cls|}}
+            <p class="mt-1 text-m text-zinc-500">
+              Class: {{shortLabel cls.targetClass}} — {{cls.resourceCount}} resources checked
+            </p>
+            {{#each cls.ruleSummaries as |rl|}}
+              <p class="mt-1 text-xs text-zinc-500">
+                Rule: {{shortLabel rl.ruleConstraint}}
+              </p>
+              <p class="mt-1 text-xs text-zinc-500">
+                Invalid Terms: {{splitToArray rl.message ', ' shortLabel}}
+              </p>
+              <p class="mt-1 text-xs text-zinc-500 p-6">
+                Violation Count: {{rl.violationCount}}
+              </p>
+            {{/each}}
+          {{/each}}
+        {{else}}
+          <p class="mt-2 text-sm text-red-500">❌ Vocabulary report not found.</p>
+        {{/if}}
       </section>
     {{/if}}
   </article>

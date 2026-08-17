@@ -97,9 +97,15 @@ export default class JobRoute extends Route {
       const status = (job.status || '').split('/').at(-1).toLowerCase();
 
       if (status === 'finished' || status === 'success') {
-        if (job['coverage-report']?.data?.id) {
-          this.router.replaceWith('report', job['coverage-report'].data.id);
+        const reportId = job['coverage-report']?.data?.id;
+        if (reportId) {
+          this.router.replaceWith('report', reportId);
+          return;
         }
+        // The job is marked as success, but the database/cache hasn't 
+        // returned the linked report yet (eventual consistency).
+        // Keep polling until the report appears!
+        this.#schedule();
         return;
       }
 
