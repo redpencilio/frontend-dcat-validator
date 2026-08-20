@@ -1,5 +1,20 @@
 import { htmlSafe } from '@ember/template';
 
+const SPEC_LINKS = {
+  '1.1.0': {
+    label: 'mobilityDCAT-AP 1.1.0',
+    url: 'https://mobilitydcat-ap.github.io/mobilityDCAT-AP/releases/1.1.0/index.html',
+  },
+  '3.0.0': {
+    label: 'mobilityDCAT-AP 3.0.0',
+    url: 'https://mobilitydcat-ap.github.io/mobilityDCAT-AP/drafts/latest/index.html',
+  },
+};
+
+export function specInfo(version) {
+  return SPEC_LINKS[version] || SPEC_LINKS['1.1.0'];
+}
+
 export function severityOf(rule) {
   const uri = rule.severity ?? '';
   if (uri.includes('Warning')) return 'warning';

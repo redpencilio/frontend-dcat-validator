@@ -28,7 +28,7 @@ const KNOWN_ENDPOINTS = [
   {
     country: 'Finland',
     label: 'catalog.digitraffic.fi',
-    url: ' https://catalog.digitraffic.fi/en/catalog.ttl'
+    url: ' https://catalog.digitraffic.fi/en/catalog.ttl',
   },
   {
     country: 'Germany',
@@ -94,6 +94,7 @@ export default class IndexController extends Controller {
   knownEndpoints = KNOWN_ENDPOINTS;
 
   @tracked endpointUrl = '';
+  @tracked dcatApVersion = '1.1.0';
   @tracked submitting = false;
   @tracked errorMessage = null;
   @tracked latestReportId = null;
@@ -103,6 +104,16 @@ export default class IndexController extends Controller {
     this.endpointUrl = event.target.value;
     this.errorMessage = null;
     this.latestReportId = null;
+  }
+
+  @action
+  updateVersion(event) {
+    this.dcatApVersion = event.target.value;
+  }
+
+  @action
+  setVersion(version) {
+    this.dcatApVersion = version;
   }
 
   @action
@@ -123,6 +134,7 @@ export default class IndexController extends Controller {
     try {
       const job = this.store.createRecord('validation-jobs', {
         endpointUrl: this.endpointUrl,
+        dcatApVersion: this.dcatApVersion,
       });
       const init = createRecord(job);
       init.body = JSON.stringify(

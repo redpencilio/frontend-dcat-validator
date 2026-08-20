@@ -60,6 +60,7 @@ export default class ReportRoute extends Route {
     const jobId = model?.['coverage-job']?.data?.id;
     controller.vocabReport = null;
     controller.shaclReport = null;
+    controller.dcatApVersion = '1.1.0';
     if (jobId) {
       try {
         const job = this.store.peekRecord('validation-jobs', jobId);
@@ -72,6 +73,7 @@ export default class ReportRoute extends Route {
         if (shaclId) {
           controller.shaclReport = this.store.peekRecord('validation-summaries', shaclId);
         }
+        controller.dcatApVersion = job?.dcatApVersion || '1.1.0';
       } catch {
         // date unavailable
       }
