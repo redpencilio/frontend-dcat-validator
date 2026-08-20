@@ -88,7 +88,9 @@ import {
 
         {{#let
           (mergedClassSummaries
-            @model.targetClassSummaries @controller.vocabReport
+            @model.targetClassSummaries
+            @controller.vocabReport
+            @controller.shaclReport
           )
           as |summaries|
         }}

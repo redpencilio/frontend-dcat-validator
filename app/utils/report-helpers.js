@@ -95,69 +95,178 @@ export function ruleStats(rule, cls) {
   };
 }
 
-export function mergedClassSummaries(coverSummaries, vocabReport) {
-  const vocabSummaries = vocabReport?.targetClassSummaries;
-  if (!vocabSummaries?.length) return coverSummaries;
+export function isIgnoredShaclConstraint(rule) {
+  const constraint = rule?.constraint || '';
+  if (constraint.includes('MinCountConstraintComponent')) {
+    return true;
+  }
+  if (
+    constraint.endsWith('#InConstraintComponent') ||
+    constraint === 'InConstraintComponent' ||
+    (constraint.includes('InConstraintComponent') &&
+      !constraint.includes('LanguageInConstraintComponent'))
+  ) {
+    return true;
+  }
+  const msg = (rule?.message || '').toLowerCase();
+  if (
+    msg.includes('at least one') ||
+    msg.includes('exactly one value must be provided') ||
+    msg.includes('is mandatory. exactly one')
+  ) {
+    return true;
+  }
+  return false;
+}
 
-  const vocabs = [];
-  for (const vc of vocabSummaries) vocabs.push(vc);
-  if (!vocabs.length) return coverSummaries;
+export function formatShaclMessage(message) {
+  if (!message) return null;
+
+  const trimmed = message.trim();
+
+  // 1. NodeKindConstraint translations
+  if (/^Value is not of Node Kind sh:BlankNodeOrIRI$/i.test(trimmed)) {
+    return 'Value must be a valid URI resource (<https://...>), not a text string.';
+  }
+  if (/^Value is not of Node Kind sh:IRI$/i.test(trimmed)) {
+    return 'Value must be a valid URI resource (<https://...>), not a text string.';
+  }
+  if (/^Value is not of Node Kind sh:Literal$/i.test(trimmed)) {
+    return 'Value must be a text string literal, not a URI resource.';
+  }
+  if (/^Value is not of Node Kind sh:BlankNode$/i.test(trimmed)) {
+    return 'Value must be a blank node resource.';
+  }
+
+  // 2. pySHACL "must conform to one or more shapes in [ sh:pattern ... ]"
+  const orPatternMatch = message.match(
+    /Node\s+<([^>]+)>\s+must conform to one or more shapes in\s+(.*)/i,
+  );
+  if (orPatternMatch) {
+    const invalidNode = orPatternMatch[1];
+    const rest = orPatternMatch[2];
+    const patterns = [];
+    const patternRegex = /Literal\("([^"]+)"\)/g;
+    let match;
+    while ((match = patternRegex.exec(rest)) !== null) {
+      let clean = match[1]
+        .replace(/^\^/, '')
+        .replace(/\$$/, '')
+        .replace(/\\\./g, '.')
+        .replace(/\.\+/g, '*');
+      patterns.push(clean);
+    }
+    if (patterns.length > 0) {
+      return `Invalid URI <${invalidNode}>. Must match: ${patterns.join(' or ')}`;
+    }
+  }
+
+  // 3. pySHACL single pattern match failure
+  const singlePatternMatch = message.match(
+    /Node\s+<([^>]+)>\s+does not match\s+pattern\s+(?:Literal\("([^"]+)"\)|"([^"]+)")/i,
+  );
+  if (singlePatternMatch) {
+    const invalidNode = singlePatternMatch[1];
+    const rawPattern = singlePatternMatch[2] || singlePatternMatch[3];
+    const cleanPattern = rawPattern
+      .replace(/^\^/, '')
+      .replace(/\$$/, '')
+      .replace(/\\\./g, '.')
+      .replace(/\.\+/g, '*');
+    return `Invalid URI <${invalidNode}>. Must match: ${cleanPattern}`;
+  }
+
+  // 4. Clean up generic Literal("...") or escaped dots from other messages
+  return message
+    .replace(/Literal\("([^"]+)"\)/g, '$1')
+    .replace(/\\\./g, '.');
+}
+
+export function mergedClassSummaries(coverSummaries, vocabReport, shaclReport) {
+  if (!coverSummaries) return [];
 
   const vocabByClass = {};
-  for (const vc of vocabs) {
-    vocabByClass[vc.targetClass] = vc;
+  if (vocabReport?.targetClassSummaries) {
+    for (const vc of vocabReport.targetClassSummaries) {
+      if (!vc?.targetClass) continue;
+      const rules = {};
+      for (const vrs of vc.ruleSummaries ?? []) {
+        if (vrs?.ruleConstraint) {
+          rules[vrs.ruleConstraint] = vrs;
+        }
+      }
+      vocabByClass[vc.targetClass] = rules;
+    }
+  }
+
+  const shaclByClass = {};
+  if (shaclReport?.targetClassSummaries) {
+    for (const sc of shaclReport.targetClassSummaries) {
+      if (!sc?.targetClass) continue;
+      const issuesByProp = {};
+      for (const srs of sc.ruleSummaries ?? []) {
+        if (isIgnoredShaclConstraint(srs)) continue;
+        if (!srs?.ruleConstraint) continue;
+        if (!issuesByProp[srs.ruleConstraint]) {
+          issuesByProp[srs.ruleConstraint] = [];
+        }
+        issuesByProp[srs.ruleConstraint].push({
+          ruleConstraint: srs.ruleConstraint,
+          constraint: srs.constraint,
+          severity: srs.severity,
+          message: formatShaclMessage(srs.message),
+          count: srs.violationCount ?? 0,
+        });
+      }
+      shaclByClass[sc.targetClass] = issuesByProp;
+    }
   }
 
   const result = [];
   for (const cs of coverSummaries) {
-    const vc = vocabByClass[cs.targetClass];
-    if (!vc) {
-      result.push(cs);
-      continue;
-    }
-
-    const vocabRules = [];
-    for (const vrs of vc.ruleSummaries ?? []) vocabRules.push(vrs);
-    if (!vocabRules.length) {
-      result.push(cs);
-      continue;
-    }
-
-    const vocabByConstraint = {};
-    for (const vrs of vocabRules) {
-      vocabByConstraint[vrs.ruleConstraint] = vrs;
-    }
+    const vocabRules = { ...(vocabByClass[cs.targetClass] || {}) };
+    const shaclRules = { ...(shaclByClass[cs.targetClass] || {}) };
 
     const mergedRules = [];
     for (const rs of cs.ruleSummaries ?? []) {
-      const vrs = vocabByConstraint[rs.ruleConstraint];
-      if (vrs) {
-        delete vocabByConstraint[rs.ruleConstraint];
-        mergedRules.push({
-          ruleConstraint: rs.ruleConstraint,
-          violationCount: rs.violationCount ?? 0,
-          vocabViolationCount: vrs.violationCount ?? 0,
-          severity: rs.severity,
-          message: vrs.message ?? null,
-        });
-      } else {
-        mergedRules.push({
-          ruleConstraint: rs.ruleConstraint,
-          violationCount: rs.violationCount ?? 0,
-          vocabViolationCount: 0,
-          severity: rs.severity,
-          message: null,
-        });
-      }
+      const vrs = vocabRules[rs.ruleConstraint];
+      if (vrs) delete vocabRules[rs.ruleConstraint];
+
+      const sIssues = shaclRules[rs.ruleConstraint] || [];
+      if (shaclRules[rs.ruleConstraint]) delete shaclRules[rs.ruleConstraint];
+
+      mergedRules.push({
+        ruleConstraint: rs.ruleConstraint,
+        violationCount: rs.violationCount ?? 0,
+        vocabViolationCount: vrs?.violationCount ?? 0,
+        severity: rs.severity,
+        message: vrs?.message ?? null,
+        shaclIssues: sIssues,
+      });
     }
 
-    for (const vrs of Object.values(vocabByConstraint)) {
+    for (const vrs of Object.values(vocabRules)) {
+      const sIssues = shaclRules[vrs.ruleConstraint] || [];
+      if (shaclRules[vrs.ruleConstraint]) delete shaclRules[vrs.ruleConstraint];
+
       mergedRules.push({
         ruleConstraint: vrs.ruleConstraint,
         violationCount: 0,
         vocabViolationCount: vrs.violationCount ?? 0,
         severity: vrs.severity,
         message: vrs.message ?? null,
+        shaclIssues: sIssues,
+      });
+    }
+
+    for (const [propUri, sIssues] of Object.entries(shaclRules)) {
+      mergedRules.push({
+        ruleConstraint: propUri,
+        violationCount: 0,
+        vocabViolationCount: 0,
+        severity: sIssues[0]?.severity || 'http://www.w3.org/ns/shacl#Warning',
+        message: null,
+        shaclIssues: sIssues,
       });
     }
 
