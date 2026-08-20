@@ -36,16 +36,12 @@ const get = helper(function ([obj, key]) {
   return obj[key];
 });
 
-const validScoreClass = helper(function ([is100, validText]) {
-  return is100 ? `font-semibold ${validText}` : 'text-zinc-400';
-});
-
 const scoreTooltip = helper(function ([stats]) {
   if (!stats) return '';
   if (stats.vocabInvalid > 0) {
-    return `Coverage Score: ${stats.coveredPct}% (${stats.covered}/${stats.total} entities present with this property)\nValid Vocabulary: ${stats.validPct}% (${stats.valid}/${stats.total} entities with valid terms)\nInvalid Vocabulary: ${stats.vocabInvalid} entities with disallowed terms`;
+    return `Valid: ${stats.validPct}% (${stats.valid}/${stats.total} with valid vocabulary)\nCoverage: ${stats.coveredPct}% (${stats.covered}/${stats.total} resources covered)\nInvalid Vocabulary: ${stats.vocabInvalid} with disallowed terms\nNot Covered: ${stats.missing} missing`;
   }
-  return `Coverage Score: ${stats.coveredPct}% (${stats.covered}/${stats.total} entities present with this property)`;
+  return `Valid: ${stats.validPct}% (${stats.valid}/${stats.total} covered & valid)\nNot Covered: ${stats.missing} missing`;
 });
 
 const SEVERITY_CONFIG = {
@@ -56,7 +52,6 @@ const SEVERITY_CONFIG = {
     validBarFill: 'bg-green-500',
     vocabBarFill: 'bg-green-300',
     validText: 'text-green-700',
-    vocabText: 'text-green-600',
     failText: 'text-red-700',
     fontWeight: 'font-semibold',
   },
@@ -67,7 +62,6 @@ const SEVERITY_CONFIG = {
     validBarFill: 'bg-amber-400',
     vocabBarFill: 'bg-amber-200',
     validText: 'text-amber-700',
-    vocabText: 'text-amber-600',
     failText: 'text-amber-700',
     fontWeight: 'font-semibold',
   },
@@ -78,7 +72,6 @@ const SEVERITY_CONFIG = {
     validBarFill: 'bg-zinc-400',
     vocabBarFill: 'bg-zinc-200',
     validText: 'text-zinc-500',
-    vocabText: 'text-zinc-400',
     failText: 'text-zinc-500',
     fontWeight: 'font-medium',
   },
@@ -134,20 +127,20 @@ const SeverityGroup = <template>
                 class="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-xs
                   {{cfg.fontWeight}}
                   {{if
-                    (eq stats.coveredPct 100)
+                    (and (eq stats.coveredPct 100) (eq stats.vocabInvalid 0))
                     cfg.validText
-                    cfg.failText
+                    'text-zinc-800'
                   }}"
               >
                 <div>{{stats.covered}} / {{stats.total}}</div>
                 {{#if (gt stats.vocabInvalid 0)}}
                   <div
-                    class="mt-0.5 text-[10px] font-normal text-zinc-400 leading-tight"
+                    class="mt-0.5 text-[11px] font-normal text-zinc-400 leading-tight whitespace-nowrap"
                   >
                     {{stats.valid}}
                     valid ·
                     <span
-                      class="font-medium {{cfg.vocabText}}"
+                      class="font-medium text-red-600"
                     >{{stats.vocabInvalid}} invalid</span>
                   </div>
                 {{/if}}
@@ -159,33 +152,26 @@ const SeverityGroup = <template>
                   @vocabColor={{cfg.vocabBarFill}}
                 />
               </td>
-              <td class="w-16 py-2.5 pr-5 text-right text-xs">
-                {{#if (gt stats.vocabInvalid 0)}}
-                  <div class="cursor-help" title={{scoreTooltip stats}}>
-                    <div
-                      class="font-semibold text-zinc-800"
-                    >{{stats.coveredPct}}%
-                      <span
-                        class="text-[10px] font-normal text-zinc-400"
-                      >cov</span></div>
-                    <div
-                      class="text-[10px] font-medium {{cfg.validText}}"
-                    >{{stats.validPct}}%
-                      <span class="font-normal text-zinc-400">valid</span></div>
-                  </div>
-                {{else}}
+              <td class="w-24 py-2.5 pr-5 text-right text-xs whitespace-nowrap">
+                <div class="cursor-help" title={{scoreTooltip stats}}>
                   <div
-                    class="cursor-help
+                    class="font-semibold tabular-nums
                       {{if
-                        (eq stats.coveredPct 100)
-                        (validScoreClass true cfg.validText)
-                        'text-zinc-400'
+                        (and (eq stats.validPct 100) (eq stats.vocabInvalid 0))
+                        cfg.validText
+                        'text-zinc-900'
                       }}"
-                    title={{scoreTooltip stats}}
                   >
-                    {{stats.coveredPct}}%
+                    {{stats.validPct}}%
                   </div>
-                {{/if}}
+                  {{#if (gt stats.vocabInvalid 0)}}
+                    <div
+                      class="mt-0.5 text-[11px] font-normal text-zinc-400 tabular-nums leading-tight"
+                    >
+                      {{stats.coveredPct}}% cov
+                    </div>
+                  {{/if}}
+                </div>
               </td>
             </tr>
           {{/let}}
@@ -287,33 +273,28 @@ export default class ClassAccordion extends Component {
                   class="px-4 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-zinc-400"
                 >Compliant</th>
                 <th
-                  class="w-36 px-4 py-2 text-center text-[10px] font-medium text-zinc-400"
+                  class="w-36 px-4 py-2 text-center text-[10px] font-semibold uppercase tracking-wider text-zinc-400"
                 >
-                  <div
-                    class="flex items-center justify-center gap-2 text-[10px] text-zinc-400"
+                  <span
+                    class="inline-flex cursor-help items-center justify-center gap-1 hover:text-zinc-600"
+                    title="Dark segment: Covered with valid vocabulary&#10;Light segment: Covered with invalid vocabulary&#10;Grey track: Not covered"
                   >
-                    <span
-                      class="inline-flex items-center gap-1"
-                      title="Fully compliant (coverage & vocab good)"
-                    ><span
-                        class="h-1.5 w-1.5 rounded-full bg-zinc-600"
-                      ></span>Valid</span>
-                    <span
-                      class="inline-flex items-center gap-1"
-                      title="Coverage good (invalid vocabulary)"
-                    ><span
-                        class="h-1.5 w-1.5 rounded-full bg-zinc-300"
-                      ></span>Invalid vocab</span>
-                    <span
-                      class="inline-flex items-center gap-1"
-                      title="Not covered at all"
-                    ><span
-                        class="h-1.5 w-1.5 rounded-full ring-1 ring-zinc-200 bg-zinc-100"
-                      ></span>Not covered</span>
-                  </div>
+                    Coverage & Validity
+                    <svg
+                      class="h-3 w-3 text-zinc-400"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                        clip-rule="evenodd"
+                      />
+                    </svg>
+                  </span>
                 </th>
                 <th
-                  class="w-16 pr-5 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-zinc-400"
+                  class="w-24 pr-5 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-zinc-400"
                 >Score</th>
               </tr>
             </thead>
