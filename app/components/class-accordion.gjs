@@ -127,18 +127,18 @@ const SeverityGroup = <template>
                 class="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-xs
                   {{cfg.fontWeight}}
                   {{if
-                    (and (eq stats.coveredPct 100) (eq stats.vocabInvalid 0))
+                    (and (eq stats.validPct 100) (eq stats.vocabInvalid 0))
                     cfg.validText
                     'text-zinc-800'
                   }}"
               >
-                <div>{{stats.covered}} / {{stats.total}}</div>
+                <div>{{stats.valid}} / {{stats.total}}</div>
                 {{#if (gt stats.vocabInvalid 0)}}
                   <div
                     class="mt-0.5 text-[11px] font-normal text-zinc-400 leading-tight whitespace-nowrap"
                   >
-                    {{stats.valid}}
-                    valid ·
+                    {{stats.covered}}
+                    covered ·
                     <span
                       class="font-medium text-red-600"
                     >{{stats.vocabInvalid}} invalid</span>
@@ -152,24 +152,24 @@ const SeverityGroup = <template>
                   @vocabColor={{cfg.vocabBarFill}}
                 />
               </td>
-              <td class="w-24 py-2.5 pr-5 text-right text-xs whitespace-nowrap">
+              <td class="w-32 py-2.5 pr-5 text-right text-xs whitespace-nowrap">
                 <div class="cursor-help" title={{scoreTooltip stats}}>
-                  <div
-                    class="font-semibold tabular-nums
-                      {{if
-                        (and (eq stats.validPct 100) (eq stats.vocabInvalid 0))
-                        cfg.validText
-                        'text-zinc-900'
-                      }}"
-                  >
-                    {{stats.validPct}}%
-                  </div>
                   {{#if (gt stats.vocabInvalid 0)}}
-                    <div
-                      class="mt-0.5 text-[11px] font-normal text-zinc-400 tabular-nums leading-tight"
-                    >
-                      {{stats.coveredPct}}% cov
-                    </div>
+                    <span
+                      class="font-semibold tabular-nums text-zinc-900"
+                    >{{stats.validPct}}%</span>
+                    <span
+                      class="ml-1 text-[11px] font-normal text-zinc-400 tabular-nums"
+                    >({{stats.coveredPct}}% cov)</span>
+                  {{else}}
+                    <span
+                      class="font-semibold tabular-nums
+                        {{if
+                          (eq stats.validPct 100)
+                          cfg.validText
+                          'text-zinc-900'
+                        }}"
+                    >{{stats.validPct}}%</span>
                   {{/if}}
                 </div>
               </td>
@@ -294,7 +294,7 @@ export default class ClassAccordion extends Component {
                   </span>
                 </th>
                 <th
-                  class="w-24 pr-5 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-zinc-400"
+                  class="w-32 pr-5 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-zinc-400"
                 >Score</th>
               </tr>
             </thead>
