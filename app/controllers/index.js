@@ -107,6 +107,11 @@ export default class IndexController extends Controller {
   }
 
   @action
+  updateVersion(event) {
+    this.dcatApVersion = event.target.value;
+  }
+
+  @action
   useExample(url) {
     this.endpointUrl = url;
     this.errorMessage = null;

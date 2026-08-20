@@ -31,6 +31,16 @@ import { fn } from '@ember/helper';
           class="input flex-1"
           disabled={{@controller.submitting}}
         />
+        <select
+          aria-label="DCAT-AP version"
+          value={{@controller.dcatApVersion}}
+          {{on "change" @controller.updateVersion}}
+          class="input w-auto"
+          disabled={{@controller.submitting}}
+        >
+          <option value="1.1.0">1.1.0</option>
+          <option value="3.0.0">3.0.0</option>
+        </select>
         <button
           type="submit"
           class="btn-primary"
