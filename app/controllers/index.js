@@ -45,11 +45,6 @@ const KNOWN_ENDPOINTS = [
     label: 'trafficdata.se',
     url: 'https://trafficdata.se/catalog.xml',
   },
-  {
-    country: 'Test (Local)',
-    label: 'Local Finland (3-Color)',
-    url: 'http://172.23.0.1:8080/catalog-finland.ttl',
-  },
 ].sort((a, b) => a.country.localeCompare(b.country));
 
 function humanizeSeconds(s) {
