@@ -29,6 +29,9 @@ export default class ReportRoute extends Route {
             'coverage-job.vocabulary-report',
             'coverage-job.vocabulary-report.target-class-summaries',
             'coverage-job.vocabulary-report.target-class-summaries.rule-summaries',
+            'coverage-job.shacl-report',
+            'coverage-job.shacl-report.target-class-summaries',
+            'coverage-job.shacl-report.target-class-summaries.rule-summaries',
           ],
         }),
       );
@@ -56,6 +59,7 @@ export default class ReportRoute extends Route {
     }
     const jobId = model?.['coverage-job']?.data?.id;
     controller.vocabReport = null;
+    controller.shaclReport = null;
     if (jobId) {
       try {
         const job = this.store.peekRecord('validation-jobs', jobId);
@@ -63,6 +67,10 @@ export default class ReportRoute extends Route {
         const vocabId = job?.['vocabulary-report']?.data?.id;
         if (vocabId) {
           controller.vocabReport = this.store.peekRecord('validation-summaries', vocabId);
+        }
+        const shaclId = job?.['shacl-report']?.data?.id;
+        if (shaclId) {
+          controller.shaclReport = this.store.peekRecord('validation-summaries', shaclId);
         }
       } catch {
         // date unavailable

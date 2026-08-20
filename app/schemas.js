@@ -105,6 +105,7 @@ export const ruleSummarySchema = {
     { kind: 'field', name: 'ruleConstraint', sourceKey: 'rule-constraint' },
     { kind: 'field', name: 'message' },
     { kind: 'field', name: 'severity' },
+    { kind: 'field', name: 'constraint' },
     { kind: 'field', name: 'uri' },
     {
       kind: 'resource',
