@@ -48,10 +48,12 @@ export default class ReportRoute extends Route {
       });
     }
     const jobId = model?.['coverage-job']?.data?.id;
+    controller.dcatApVersion = '1.1.0';
     if (jobId) {
       try {
         const job = this.store.peekRecord('validation-jobs', jobId);
         controller.reportDate = job?.modifiedAt ?? job?.createdAt ?? null;
+        controller.dcatApVersion = job?.dcatApVersion || '1.1.0';
       } catch {
         // date unavailable
       }

@@ -25,6 +25,21 @@ const PREFIX_MAP = [
   ['xsd',    'http://www.w3.org/2001/XMLSchema#'],
 ];
 
+const SPEC_LINKS = {
+  '1.1.0': {
+    label: 'mobilityDCAT-AP 1.1.0',
+    url: 'https://mobilitydcat-ap.github.io/mobilityDCAT-AP/releases/1.1.0/index.html',
+  },
+  '3.0.0': {
+    label: 'mobilityDCAT-AP 3.0.0',
+    url: 'https://mobilitydcat-ap.github.io/mobilityDCAT-AP/drafts/latest/index.html',
+  },
+};
+
+function specInfo(version) {
+  return SPEC_LINKS[version] || SPEC_LINKS['1.1.0'];
+}
+
 function shortLabel(uri) {
   if (!uri) return '—';
   for (const [prefix, ns] of PREFIX_MAP) {
@@ -121,11 +136,13 @@ function formatDate(d) {
       {{! ── Report header ── }}
       <header class="border-b-2 border-zinc-900 pb-8">
         <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">
-          <a href="https://mobilitydcat-ap.github.io/mobilityDCAT-AP/releases/1.1.0/index.html"
-             target="_blank" rel="noopener noreferrer"
-             class="hover:text-zinc-600 hover:underline">
-            DCAT-AP Mobility 1.1.0
-          </a>
+          {{#let (specInfo @controller.dcatApVersion) as |spec|}}
+            <a href={{spec.url}}
+              target="_blank" rel="noopener noreferrer"
+              class="hover:text-zinc-600 hover:underline">
+              {{spec.label}}
+            </a>
+          {{/let}}
         </p>
         <h1 class="mt-1 text-4xl font-bold tracking-tight text-zinc-900">
           Validation Report
