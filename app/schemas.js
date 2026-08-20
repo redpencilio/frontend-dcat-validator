@@ -3,6 +3,7 @@ export const validationJobSchema = {
   identity: { kind: '@id', name: 'id' },
   fields: [
     { kind: 'field', name: 'endpointUrl', sourceKey: 'endpoint-url' },
+    { kind: 'field', name: 'dcatApVersion', sourceKey: 'dcat-ap-version' },
     { kind: 'field', name: 'status' },
     { kind: 'field', name: 'createdAt', sourceKey: 'created' },
     { kind: 'field', name: 'modifiedAt', sourceKey: 'modified' },
