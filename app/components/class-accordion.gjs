@@ -44,6 +44,26 @@ const scoreTooltip = helper(function ([stats]) {
   return `Valid: ${stats.validPct}% (${stats.valid}/${stats.total} covered & valid)\nNot Covered: ${stats.missing} missing`;
 });
 
+const shaclSeverityConfig = helper(function ([severity]) {
+  const s = severity || '';
+  if (s.includes('Violation')) {
+    return {
+      textColor: 'text-red-700',
+      icon: '🚫',
+    };
+  }
+  if (s.includes('Info')) {
+    return {
+      textColor: 'text-blue-700',
+      icon: 'ℹ️',
+    };
+  }
+  return {
+    textColor: 'text-amber-700',
+    icon: '⚠️',
+  };
+});
+
 const SEVERITY_CONFIG = {
   violation: {
     headerBg: 'bg-red-50',
@@ -120,6 +140,29 @@ const SeverityGroup = <template>
                         {{/if}}
                       {{/each}}
                     {{/let}}
+                  </div>
+                {{/if}}
+                {{#if rule.shaclIssues.length}}
+                  <div class="mt-1 space-y-1">
+                    {{#each rule.shaclIssues as |issue|}}
+                      {{#let (shaclSeverityConfig issue.severity) as |sCfg|}}
+                        <div class="flex items-start gap-1 text-[11px] {{sCfg.textColor}}">
+                          <span class="shrink-0">{{sCfg.icon}}</span>
+                          <span>
+                            {{#if issue.message}}
+                              {{issue.message}}
+                            {{else if issue.constraint}}
+                              Quality issue ({{shortLabel issue.constraint}})
+                            {{else}}
+                              Quality constraint issue
+                            {{/if}}
+                            {{#if (gt issue.count 0)}}
+                              <span class="font-normal font-sans text-zinc-400">({{issue.count}} {{if (eq issue.count 1) "issue" "issues"}})</span>
+                            {{/if}}
+                          </span>
+                        </div>
+                      {{/let}}
+                    {{/each}}
                   </div>
                 {{/if}}
               </td>
