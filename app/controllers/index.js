@@ -152,7 +152,7 @@ export default class IndexController extends Controller {
     } catch (err) {
       this.errorMessage = friendlyError(err);
       this.submitting = false;
-      fetchLatestReport(this.endpointUrl).then((latest) => {
+      fetchLatestReport(this.endpointUrl, this.dcatApVersion).then((latest) => {
         this.latestReportId = latest?.id ?? null;
       });
     }

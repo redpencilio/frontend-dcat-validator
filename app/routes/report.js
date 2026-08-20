@@ -49,34 +49,44 @@ export default class ReportRoute extends Route {
     controller.reportDate = null;
     controller.latestReportId = null;
     controller.latestReportDate = null;
-    if (model?.endpointUrl) {
-      fetchLatestReport(model.endpointUrl).then((latest) => {
-        if (latest?.id && latest.id !== model.id) {
-          controller.latestReportId = latest.id;
-          controller.latestReportDate = latest.date;
-        }
-      });
-    }
-    const jobId = model?.['coverage-job']?.data?.id;
     controller.vocabReport = null;
     controller.shaclReport = null;
     controller.dcatApVersion = '1.1.0';
-    if (jobId) {
+
+    const jobId = model?.['coverage-job']?.data?.id;
+    const job = jobId ? this.store.peekRecord('validation-jobs', jobId) : null;
+    if (job) {
       try {
-        const job = this.store.peekRecord('validation-jobs', jobId);
         controller.reportDate = job?.modifiedAt ?? job?.createdAt ?? null;
         const vocabId = job?.['vocabulary-report']?.data?.id;
         if (vocabId) {
-          controller.vocabReport = this.store.peekRecord('validation-summaries', vocabId);
+          controller.vocabReport = this.store.peekRecord(
+            'validation-summaries',
+            vocabId,
+          );
         }
         const shaclId = job?.['shacl-report']?.data?.id;
         if (shaclId) {
-          controller.shaclReport = this.store.peekRecord('validation-summaries', shaclId);
+          controller.shaclReport = this.store.peekRecord(
+            'validation-summaries',
+            shaclId,
+          );
         }
         controller.dcatApVersion = job?.dcatApVersion || '1.1.0';
       } catch {
         // date unavailable
       }
+    }
+
+    if (model?.endpointUrl) {
+      fetchLatestReport(model.endpointUrl, controller.dcatApVersion).then(
+        (latest) => {
+          if (latest?.id && latest.id !== model.id) {
+            controller.latestReportId = latest.id;
+            controller.latestReportDate = latest.date;
+          }
+        },
+      );
     }
   }
 }
