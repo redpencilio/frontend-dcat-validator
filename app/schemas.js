@@ -114,6 +114,29 @@ export const ruleSummarySchema = {
       type: 'target-class-summaries',
       options: { async: true, inverse: null },
     },
+    {
+      kind: 'hasMany',
+      name: 'ruleViolations',
+      type: 'rule-violations',
+      sourceKey: 'rule-violations',
+      options: { async: false, linksMode: true, inverse: null },
+    },
+  ],
+};
+
+export const ruleViolationSchema = {
+  type: 'rule-violations',
+  identity: { kind: '@id', name: 'id' },
+  fields: [
+    { kind: 'field', name: 'value', sourceKey: 'value' },
+    { kind: 'field', name: 'uri' },
+    {
+      kind: 'resource',
+      name: 'ruleSummary',
+      type: 'rule-summaries',
+      sourceKey: 'rule-summary',
+      options: { async: true, inverse: null },
+    },
   ],
 };
 
@@ -146,6 +169,7 @@ export const schemas = [
   validationSummarySchema,
   targetClassSummarySchema,
   ruleSummarySchema,
+  ruleViolationSchema,
   endpointSchema,
   jobErrorSchema,
 ];
