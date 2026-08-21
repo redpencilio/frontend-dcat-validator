@@ -1,6 +1,7 @@
 import { pageTitle } from 'ember-page-title';
 import { LinkTo } from '@ember/routing';
 import ClassAccordion from '../components/class-accordion';
+import OverviewCard from '../components/overview-card';
 import shortLabel from '../utils/uri-labels';
 import {
   totalResources,
@@ -92,81 +93,14 @@ import {
           </h2>
 
           <div class="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2">
-            {{! 1. MANDATORY COMPLIANCE CARD }}
-            {{#let (overallTierStats summaries "violation") as |mand|}}
-              <div class="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
-                <div class="flex items-center justify-between">
-                  <span class="text-[11px] font-bold uppercase tracking-[0.16em] text-red-600">
-                    Mandatory Compliance
-                  </span>
-                  <span class="rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-700">
-                    Strict Specification
-                  </span>
-                </div>
-
-                <div class="mt-4 flex items-baseline gap-2">
-                  <span class="text-4xl font-extrabold tracking-tight text-zinc-900">
-                    {{mand.validPct}}%
-                  </span>
-                  {{#if mand.hasVocabInvalid}}
-                    <span class="text-xs text-zinc-400">
-                      ({{mand.coveredPct}}% covered)
-                    </span>
-                  {{/if}}
-                </div>
-
-                {{! Stacked Mini-Progress Bar }}
-                <div class="mt-4 flex h-2 w-full overflow-hidden rounded-full bg-zinc-100">
-                  <div class="bg-green-500 transition-all duration-500" style={{mand.validWidthStyle}}></div>
-                  <div class="bg-green-300 transition-all duration-500" style={{mand.vocabInvalidWidthStyle}}></div>
-                </div>
-
-                <p class="mt-3 text-xs text-zinc-500">
-                  <span class="font-medium text-zinc-700">{{mand.totalValid}} / {{mand.totalExpected}}</span> checks compliant
-                  {{#if mand.hasVocabInvalid}}
-                    · <span class="font-medium text-red-600">{{mand.totalVocabInvalid}} invalid vocabulary</span>
-                  {{/if}}
-                </p>
-              </div>
-            {{/let}}
-
-            {{! 2. RECOMMENDED COMPLIANCE CARD }}
-            {{#let (overallTierStats summaries "warning") as |rec|}}
-              <div class="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
-                <div class="flex items-center justify-between">
-                  <span class="text-[11px] font-bold uppercase tracking-[0.16em] text-amber-600">
-                    Recommended Compliance
-                  </span>
-                  <span class="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
-                    Quality &amp; Richness
-                  </span>
-                </div>
-
-                <div class="mt-4 flex items-baseline gap-2">
-                  <span class="text-4xl font-extrabold tracking-tight text-zinc-900">
-                    {{rec.validPct}}%
-                  </span>
-                  {{#if rec.hasVocabInvalid}}
-                    <span class="text-xs text-zinc-400">
-                      ({{rec.coveredPct}}% covered)
-                    </span>
-                  {{/if}}
-                </div>
-
-                {{! Stacked Mini-Progress Bar }}
-                <div class="mt-4 flex h-2 w-full overflow-hidden rounded-full bg-zinc-100">
-                  <div class="bg-amber-400 transition-all duration-500" style={{rec.validWidthStyle}}></div>
-                  <div class="bg-amber-200 transition-all duration-500" style={{rec.vocabInvalidWidthStyle}}></div>
-                </div>
-
-                <p class="mt-3 text-xs text-zinc-500">
-                  <span class="font-medium text-zinc-700">{{rec.totalValid}} / {{rec.totalExpected}}</span> checks compliant
-                  {{#if rec.hasVocabInvalid}}
-                    · <span class="font-medium text-red-600">{{rec.totalVocabInvalid}} invalid vocabulary</span>
-                  {{/if}}
-                </p>
-              </div>
-            {{/let}}
+            <OverviewCard
+              @tier="violation"
+              @stats={{overallTierStats summaries "violation"}}
+            />
+            <OverviewCard
+              @tier="warning"
+              @stats={{overallTierStats summaries "warning"}}
+            />
           </div>
         </section>
 
