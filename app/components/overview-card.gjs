@@ -59,12 +59,6 @@ export default class OverviewCard extends Component {
           >
             {{this.title}}
           </span>
-          <span
-            class="rounded-full px-2.5 py-0.5 text-xs font-semibold
-              {{this.badgeClass}}"
-          >
-            {{this.badgeLabel}}
-          </span>
         </div>
 
         <div class="mt-4 flex items-baseline gap-2">
