@@ -46,16 +46,64 @@ export function rulesFor(cls, sev) {
 }
 
 export function violationsData(rule) {
-  let rawTerms = [];
-  if (rule?.ruleViolations?.length) {
-    rawTerms = [...rule.ruleViolations].map((r) =>
-      typeof r === 'string' ? r : r.value,
-    );
-  } else if (rule?.message) {
-    rawTerms = splitToArray(rule.message, ', ');
+  if (!rule) {
+    return { terms: [], hasMore: false, isSingular: false };
   }
 
-  const terms = rawTerms.filter(Boolean);
+  let rawTerms = [];
+  try {
+    const rawViolations = rule.ruleViolations;
+    if (
+      rawViolations &&
+      (Array.isArray(rawViolations) || typeof rawViolations.length === 'number')
+    ) {
+      rawTerms = Array.from(rawViolations)
+        .map((r) => {
+          if (!r) return null;
+          const val = typeof r === 'string' ? r : r?.value || r?.uri || '';
+          let suggestions = [];
+          try {
+            const rawSugs = r?.suggestions || r?.termSuggestions;
+            if (
+              rawSugs &&
+              (Array.isArray(rawSugs) || typeof rawSugs.length === 'number')
+            ) {
+              suggestions = Array.from(rawSugs)
+                .filter(Boolean)
+                .sort((a, b) => {
+                  const scoreA =
+                    typeof a === 'object' && a !== null ? (a.score ?? 0) : 0;
+                  const scoreB =
+                    typeof b === 'object' && b !== null ? (b.score ?? 0) : 0;
+                  return scoreB - scoreA;
+                })
+                .map((sug) => ({
+                  value: sug.value,
+                  score: sug.score,
+                }))
+                .filter(Boolean);
+            }
+          } catch {
+            suggestions = [];
+          }
+          return {
+            value: val,
+            suggestions,
+          };
+        })
+        .filter(Boolean);
+    } else if (rule.message) {
+      rawTerms = splitToArray(rule.message, ', ').map((str) => ({
+        value: str,
+        suggestions: [],
+      }));
+    }
+  } catch (err) {
+    console.warn('Error reading violationsData:', err);
+    rawTerms = [];
+  }
+
+  const terms = rawTerms.filter((t) => t && t.value);
   let hasMore = false;
 
   if (terms.length > 10) {
@@ -63,7 +111,7 @@ export function violationsData(rule) {
     terms.splice(10);
   } else if (
     terms.length === 10 &&
-    (rule?.vocabViolationCount || 0) > terms.length
+    (rule.vocabViolationCount || 0) > terms.length
   ) {
     hasMore = true;
   }
@@ -76,7 +124,7 @@ export function violationsData(rule) {
 }
 
 export function violationsFor(rule) {
-  return violationsData(rule).terms;
+  return violationsData(rule).terms.map((t) => t.value);
 }
 
 export function sortedClasses(summaries) {
