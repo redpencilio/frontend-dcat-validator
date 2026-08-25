@@ -258,7 +258,8 @@ export default class ClassAccordion extends Component {
         {{#let
           (severityViolations @cls "violation")
           (severityViolations @cls "warning")
-          as |mandatory recommended|
+          (severityViolations @cls "info")
+          as |mandatory recommended optional|
         }}
           {{#if (eq @cls.resourceCount 0)}}
             <span
@@ -293,6 +294,13 @@ export default class ClassAccordion extends Component {
               >
                 {{recommended}}
                 recommended violations
+              </span>
+            {{else if optional}}
+              <span
+                class="shrink-0 rounded-full bg-zinc-200 px-2.5 py-0.5 text-xs font-semibold text-zinc-500"
+              >
+                {{optional}}
+                optional violations
               </span>
             {{/if}}
           {{/if}}
