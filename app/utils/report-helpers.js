@@ -429,6 +429,7 @@ export function mergedClassSummaries(coverSummaries, vocabReport, shaclReport) {
         vocabViolationCount: 0,
         severity: sIssues[0]?.severity || 'http://www.w3.org/ns/shacl#Warning',
         message: null,
+        ruleViolations: [],
         shaclIssues: sIssues,
       });
     }
