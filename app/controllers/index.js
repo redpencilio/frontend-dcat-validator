@@ -8,6 +8,7 @@ import {
   serializeResources,
 } from '@warp-drive/utilities/json-api';
 import { fetchLatestReport } from 'rpio-dcat-validator/utils/fetch-latest-report';
+import ENV from 'rpio-dcat-validator/config/environment';
 
 const KNOWN_ENDPOINTS = [
   {
@@ -92,6 +93,7 @@ export default class IndexController extends Controller {
   @service router;
 
   knownEndpoints = KNOWN_ENDPOINTS;
+  showSpecVersionToggle = ENV.APP?.SHOW_SPEC_VERSION_TOGGLE ?? false;
 
   @tracked endpointUrl = '';
   @tracked dcatApVersion = '1.1.0';
