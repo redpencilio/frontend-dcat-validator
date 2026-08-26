@@ -45,6 +45,40 @@ export function rulesFor(cls, sev) {
     });
 }
 
+export function violationsData(rule) {
+  let rawTerms = [];
+  if (rule?.ruleViolations?.length) {
+    rawTerms = [...rule.ruleViolations].map((r) =>
+      typeof r === 'string' ? r : r.value,
+    );
+  } else if (rule?.message) {
+    rawTerms = splitToArray(rule.message, ', ');
+  }
+
+  const terms = rawTerms.filter(Boolean);
+  let hasMore = false;
+
+  if (terms.length > 10) {
+    hasMore = true;
+    terms.splice(10);
+  } else if (
+    terms.length === 10 &&
+    (rule?.vocabViolationCount || 0) > terms.length
+  ) {
+    hasMore = true;
+  }
+
+  return {
+    terms,
+    hasMore,
+    isSingular: terms.length === 1 && !hasMore,
+  };
+}
+
+export function violationsFor(rule) {
+  return violationsData(rule).terms;
+}
+
 export function sortedClasses(summaries) {
   if (!summaries) return [];
   return [...summaries].sort((a, b) => {
@@ -256,6 +290,7 @@ export function mergedClassSummaries(coverSummaries, vocabReport, shaclReport) {
         vocabViolationCount: vrs?.violationCount ?? 0,
         severity: rs.severity,
         message: vrs?.message ?? null,
+        ruleViolations: vrs?.ruleViolations ?? rs?.ruleViolations ?? [],
         shaclIssues: sIssues,
       });
     }
@@ -270,6 +305,7 @@ export function mergedClassSummaries(coverSummaries, vocabReport, shaclReport) {
         vocabViolationCount: vrs.violationCount ?? 0,
         severity: vrs.severity,
         message: vrs.message ?? null,
+        ruleViolations: vrs.ruleViolations ?? [],
         shaclIssues: sIssues,
       });
     }
@@ -281,6 +317,7 @@ export function mergedClassSummaries(coverSummaries, vocabReport, shaclReport) {
         vocabViolationCount: 0,
         severity: sIssues[0]?.severity || 'http://www.w3.org/ns/shacl#Warning',
         message: null,
+        ruleViolations: [],
         shaclIssues: sIssues,
       });
     }
