@@ -23,14 +23,16 @@ import Toggle from 'rpio-dcat-validator/components/toggle';
         class="mx-auto mt-10 max-w-2xl"
         {{on "submit" @controller.submit}}
       >
-        <div class="mb-4 flex justify-center sm:justify-start">
-          <Toggle
-            @label="Specification:"
-            @value={{@controller.dcatApVersion}}
-            @onChange={{@controller.setVersion}}
-            @disabled={{@controller.submitting}}
-          />
-        </div>
+        {{#if @controller.showSpecVersionToggle}}
+          <div class="mb-4 flex justify-center sm:justify-start">
+            <Toggle
+              @label="Specification:"
+              @value={{@controller.dcatApVersion}}
+              @onChange={{@controller.setVersion}}
+              @disabled={{@controller.submitting}}
+            />
+          </div>
+        {{/if}}
 
         <div class="flex flex-col gap-3 sm:flex-row">
           <input

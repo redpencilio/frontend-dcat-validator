@@ -31,6 +31,8 @@ export default class ReportRoute extends Route {
             'coverage-job.vocabulary-report.target-class-summaries',
             'coverage-job.vocabulary-report.target-class-summaries.rule-summaries',
             'coverage-job.vocabulary-report.target-class-summaries.rule-summaries.rule-violations',
+            'coverage-job.vocabulary-report.target-class-summaries.rule-summaries.rule-violations.suggestions',
+            'target-class-summaries.rule-summaries.rule-violations.suggestions',
             'coverage-job.shacl-report',
             'coverage-job.shacl-report.target-class-summaries',
             'coverage-job.shacl-report.target-class-summaries.rule-summaries',
