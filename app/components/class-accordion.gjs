@@ -8,6 +8,7 @@ import StackedProgressBar from './stacked-progress-bar';
 import {
   severityViolations,
   rulesFor,
+  violationsData,
   ruleStats,
   splitToArray,
 } from '../utils/report-helpers';
@@ -28,8 +29,8 @@ const and = helper(function ([a, b]) {
   return a && b;
 });
 
-const isMoreIndicator = helper(function ([term]) {
-  return typeof term === 'string' && term.startsWith('(+');
+const or = helper(function ([a, b]) {
+  return a || b;
 });
 
 const get = helper(function ([obj, key]) {
@@ -96,32 +97,27 @@ const SeverityGroup = <template>
                 <div class="font-mono"><abbr
                     title={{rule.ruleConstraint}}
                   >{{shortLabel rule.ruleConstraint}}</abbr></div>
-                {{#if (and @showInvalidTerms rule.message)}}
-                  <div class="mt-0.5 text-[11px] text-zinc-400">
-                    {{#let (splitToArray rule.message ", ") as |invalid_terms|}}
-                      {{if
-                        (eq invalid_terms.length 1)
-                        "Invalid term:"
-                        "Invalid terms:"
-                      }}
-                      {{#each invalid_terms as |invalid_term index|}}
-                        {{#if (isMoreIndicator invalid_term)}}
-                          <span
-                            class="mb-1 inline-block rounded bg-zinc-100 px-1.5 py-0.5 font-sans font-medium text-zinc-500"
-                          >{{invalid_term}}</span>
-                        {{else}}
-                          <span
-                            class="mb-1 inline-block rounded bg-transparent px-1.5 py-0.5 font-mono text-red-600 transition-colors hover:bg-red-50"
-                            title={{invalid_term}}
-                          >{{shortLabel invalid_term}}</span>{{if
-                            (isNotLast index invalid_terms)
-                            ","
-                          }}
-                        {{/if}}
+                {{#let (violationsData rule) as |vData|}}
+                  {{#if (and @showInvalidTerms vData.terms.length)}}
+                    <div class="mt-0.5 text-[11px] text-zinc-400">
+                      {{if vData.isSingular "Invalid term:" "Invalid terms:"}}
+                      {{#each vData.terms as |invalid_term index|}}
+                        <span
+                          class="mb-1 inline-block rounded bg-transparent px-1.5 py-0.5 font-mono text-red-600 transition-colors hover:bg-red-50"
+                          title={{invalid_term}}
+                        >{{shortLabel invalid_term}}</span>{{if
+                          (or (isNotLast index vData.terms) vData.hasMore)
+                          ","
+                        }}
                       {{/each}}
-                    {{/let}}
-                  </div>
-                {{/if}}
+                      {{#if vData.hasMore}}
+                        <span
+                          class="mb-1 ml-1 inline-block rounded bg-zinc-100 px-1.5 py-0.5 font-sans font-medium text-zinc-500"
+                        >... and more</span>
+                      {{/if}}
+                    </div>
+                  {{/if}}
+                {{/let}}
               </td>
               <td
                 class="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-xs

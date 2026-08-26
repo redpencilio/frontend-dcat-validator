@@ -26,9 +26,11 @@ export default class ReportRoute extends Route {
             'coverage-job',
             'target-class-summaries',
             'target-class-summaries.rule-summaries',
+            'target-class-summaries.rule-summaries.rule-violations',
             'coverage-job.vocabulary-report',
             'coverage-job.vocabulary-report.target-class-summaries',
             'coverage-job.vocabulary-report.target-class-summaries.rule-summaries',
+            'coverage-job.vocabulary-report.target-class-summaries.rule-summaries.rule-violations',
           ],
         }),
       );
