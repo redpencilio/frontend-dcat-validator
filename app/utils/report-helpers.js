@@ -8,8 +8,8 @@ export function severityOf(rule) {
 }
 
 export function severityViolations(cls, sev) {
-  if (!cls.ruleSummaries) return 0;
-  return [...cls.ruleSummaries]
+  if (!cls?.ruleSummaries) return 0;
+  return cls.ruleSummaries
     .filter((r) => severityOf(r) === sev)
     .reduce(
       (sum, r) => sum + (r.violationCount ?? 0) + (r.vocabViolationCount ?? 0),
@@ -33,9 +33,9 @@ export function rulesFor(cls, sev) {
 export function violationsData(rule) {
   let rawTerms = [];
   if (rule?.ruleViolations?.length) {
-    rawTerms = [...rule.ruleViolations].map((r) =>
-      typeof r === 'string' ? r : r.value,
-    );
+    rawTerms = Array.from(rule.ruleViolations)
+      .map((r) => (typeof r === 'string' ? r : r?.value || ''))
+      .filter(Boolean);
   }
 
   const terms = rawTerms.filter(Boolean);
@@ -73,7 +73,7 @@ export function sortedClasses(summaries) {
 
 export function totalResources(summaries) {
   if (!summaries) return 0;
-  return [...summaries].reduce((sum, cls) => sum + (cls.resourceCount ?? 0), 0);
+  return summaries.reduce((sum, cls) => sum + (cls.resourceCount ?? 0), 0);
 }
 
 export function ruleStats(rule, cls) {
@@ -111,64 +111,43 @@ export function ruleStats(rule, cls) {
 }
 
 export function mergedClassSummaries(coverSummaries, vocabReport) {
-  const vocabSummaries = vocabReport?.targetClassSummaries;
-  if (!vocabSummaries?.length) return coverSummaries;
+  if (!coverSummaries?.length) return [];
 
-  const vocabs = [];
-  for (const vc of vocabSummaries) vocabs.push(vc);
-  if (!vocabs.length) return coverSummaries;
-
-  const vocabByClass = {};
-  for (const vc of vocabs) {
-    vocabByClass[vc.targetClass] = vc;
-  }
-
-  const result = [];
-  for (const cs of coverSummaries) {
-    const vc = vocabByClass[cs.targetClass];
-    if (!vc) {
-      result.push(cs);
-      continue;
+  const vocabSummaries = vocabReport?.targetClassSummaries ?? [];
+  const vocabByClass = new Map();
+  for (const vc of vocabSummaries) {
+    if (vc.targetClass) {
+      vocabByClass.set(vc.targetClass, vc);
     }
 
-    const vocabRules = [];
-    for (const vrs of vc.ruleSummaries ?? []) vocabRules.push(vrs);
-    if (!vocabRules.length) {
-      result.push(cs);
-      continue;
-    }
+  return coverSummaries.map((cs) => {
+    const vc = cs.targetClass ? vocabByClass.get(cs.targetClass) : undefined;
+    const vocabByConstraint = new Map();
 
-    const vocabByConstraint = {};
-    for (const vrs of vocabRules) {
-      vocabByConstraint[vrs.ruleConstraint] = vrs;
+    for (const vrs of vc?.ruleSummaries ?? []) {
+      if (vrs.ruleConstraint) {
+        vocabByConstraint.set(vrs.ruleConstraint, vrs);
+      }
     }
 
     const mergedRules = [];
     for (const rs of cs.ruleSummaries ?? []) {
-      const vrs = vocabByConstraint[rs.ruleConstraint];
+      const vrs = vocabByConstraint.get(rs.ruleConstraint);
       if (vrs) {
-        delete vocabByConstraint[rs.ruleConstraint];
-        mergedRules.push({
-          ruleConstraint: rs.ruleConstraint,
-          violationCount: rs.violationCount ?? 0,
-          vocabViolationCount: vrs.violationCount ?? 0,
-          severity: rs.severity,
-          message: vrs.message ?? null,
-          ruleViolations: vrs?.ruleViolations ?? rs?.ruleViolations ?? [],
-        });
-      } else {
-        mergedRules.push({
-          ruleConstraint: rs.ruleConstraint,
-          violationCount: rs.violationCount ?? 0,
-          vocabViolationCount: 0,
-          severity: rs.severity,
-          message: null,
-          ruleViolations: rs?.ruleViolations ?? [],
-        });
+        vocabByConstraint.delete(rs.ruleConstraint);
       }
+
+      mergedRules.push({
+        ruleConstraint: rs.ruleConstraint,
+        violationCount: rs.violationCount ?? 0,
+        vocabViolationCount: vrs?.violationCount ?? 0,
+        severity: rs.severity,
+        message: vrs?.message ?? rs.message ?? null,
+        ruleViolations: vrs?.ruleViolations ?? rs.ruleViolations ?? [],
+      });
     }
 
-    for (const vrs of Object.values(vocabByConstraint)) {
+    for (const vrs of vocabByConstraint.values()) {
       mergedRules.push({
         ruleConstraint: vrs.ruleConstraint,
         violationCount: 0,
@@ -179,14 +158,12 @@ export function mergedClassSummaries(coverSummaries, vocabReport) {
       });
     }
 
-    result.push({
+    return {
       targetClass: cs.targetClass,
-      resourceCount: cs.resourceCount,
+      resourceCount: cs.resourceCount ?? 0,
       ruleSummaries: mergedRules,
-    });
-  }
-
-  return result;
+    };
+  });
 }
 
 export function formatDate(d) {
