@@ -7,7 +7,6 @@ import {
   totalResources,
   sortedClasses,
   formatDate,
-  splitToArray,
   mergedClassSummaries,
   specInfo,
   overallTierStats,
