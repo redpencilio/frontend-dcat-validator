@@ -194,91 +194,76 @@ export function ruleStats(rule, cls) {
   };
 }
 
+const NODE_KIND_MESSAGES = {
+  'sh:BlankNodeOrIRI':
+    'Value must be a valid URI resource (<https://...>), not a text string.',
+  'sh:IRI':
+    'Value must be a valid URI resource (<https://...>), not a text string.',
+  'sh:Literal':
+    'Value must be a text string literal, not a URI resource.',
+  'sh:BlankNode': 'Value must be a blank node resource.',
+};
+
+function cleanPattern(pattern) {
+  return pattern
+    .replace(/^\^|\$$/g, '')
+    .replace(/\\\./g, '.')
+    .replace(/\.\+/g, '*');
+}
+
 export function isIgnoredShaclConstraint(rule) {
   const constraint = rule?.constraint || '';
-  if (constraint.includes('MinCountConstraintComponent')) {
-    return true;
-  }
+  if (constraint.includes('MinCountConstraintComponent')) return true;
   if (
-    constraint.endsWith('#InConstraintComponent') ||
-    constraint === 'InConstraintComponent' ||
-    (constraint.includes('InConstraintComponent') &&
-      !constraint.includes('LanguageInConstraintComponent'))
+    constraint.includes('InConstraintComponent') &&
+    !constraint.includes('LanguageInConstraintComponent')
   ) {
     return true;
   }
-  const msg = (rule?.message || '').toLowerCase();
-  if (
-    msg.includes('at least one') ||
-    msg.includes('exactly one value must be provided') ||
-    msg.includes('is mandatory. exactly one')
-  ) {
-    return true;
-  }
-  return false;
+
+  const message = (rule?.message || '').toLowerCase();
+  return (
+    message.includes('at least one') ||
+    message.includes('exactly one') ||
+    message.includes('is mandatory')
+  );
 }
 
 export function formatShaclMessage(message) {
   if (!message) return null;
-
   const trimmed = message.trim();
 
-  // 1. NodeKindConstraint translations
-  if (/^Value is not of Node Kind sh:BlankNodeOrIRI$/i.test(trimmed)) {
-    return 'Value must be a valid URI resource (<https://...>), not a text string.';
-  }
-  if (/^Value is not of Node Kind sh:IRI$/i.test(trimmed)) {
-    return 'Value must be a valid URI resource (<https://...>), not a text string.';
-  }
-  if (/^Value is not of Node Kind sh:Literal$/i.test(trimmed)) {
-    return 'Value must be a text string literal, not a URI resource.';
-  }
-  if (/^Value is not of Node Kind sh:BlankNode$/i.test(trimmed)) {
-    return 'Value must be a blank node resource.';
+  // 1. NodeKind translations
+  const nodeKindMatch = trimmed.match(/^Value is not of Node Kind (sh:\w+)$/i);
+  if (nodeKindMatch && NODE_KIND_MESSAGES[nodeKindMatch[1]]) {
+    return NODE_KIND_MESSAGES[nodeKindMatch[1]];
   }
 
-  // 2. pySHACL "must conform to one or more shapes in [ sh:pattern ... ]"
-  const orPatternMatch = message.match(
+  // 2. Multiple pattern match failure
+  const orMatch = trimmed.match(
     /Node\s+<([^>]+)>\s+must conform to one or more shapes in\s+(.*)/i,
   );
-  if (orPatternMatch) {
-    const invalidNode = orPatternMatch[1];
-    const rest = orPatternMatch[2];
-    const patterns = [];
-    const patternRegex = /Literal\("([^"]+)"\)/g;
-    let match;
-    while ((match = patternRegex.exec(rest)) !== null) {
-      let clean = match[1]
-        .replace(/^\^/, '')
-        .replace(/\$$/, '')
-        .replace(/\\\./g, '.')
-        .replace(/\.\+/g, '*');
-      patterns.push(clean);
-    }
-    if (patterns.length > 0) {
-      return `Invalid URI <${invalidNode}>. Must match: ${patterns.join(' or ')}`;
+  if (orMatch) {
+    const patterns = Array.from(
+      orMatch[2].matchAll(/Literal\("([^"]+)"\)/g),
+      (m) => cleanPattern(m[1]),
+    );
+    if (patterns.length) {
+      return `Invalid URI <${orMatch[1]}>. Must match: ${patterns.join(' or ')}`;
     }
   }
 
-  // 3. pySHACL single pattern match failure
-  const singlePatternMatch = message.match(
+  // 3. Single pattern match failure
+  const singleMatch = trimmed.match(
     /Node\s+<([^>]+)>\s+does not match\s+pattern\s+(?:Literal\("([^"]+)"\)|"([^"]+)")/i,
   );
-  if (singlePatternMatch) {
-    const invalidNode = singlePatternMatch[1];
-    const rawPattern = singlePatternMatch[2] || singlePatternMatch[3];
-    const cleanPattern = rawPattern
-      .replace(/^\^/, '')
-      .replace(/\$$/, '')
-      .replace(/\\\./g, '.')
-      .replace(/\.\+/g, '*');
-    return `Invalid URI <${invalidNode}>. Must match: ${cleanPattern}`;
+  if (singleMatch) {
+    const pattern = cleanPattern(singleMatch[2] || singleMatch[3] || '');
+    return `Invalid URI <${singleMatch[1]}>. Must match: ${pattern}`;
   }
 
-  // 4. Clean up generic Literal("...") or escaped dots from other messages
-  return message
-    .replace(/Literal\("([^"]+)"\)/g, '$1')
-    .replace(/\\\./g, '.');
+  // 4. Clean up generic Literal("...") or escaped dots
+  return trimmed.replace(/Literal\("([^"]+)"\)/g, '$1').replace(/\\\./g, '.');
 }
 
 /**
@@ -293,27 +278,23 @@ export function mergedClassSummaries(coverSummaries, vocabReport, shaclReport) {
   if (!coverSummaries?.length) return [];
 
   const vocabByClass = new Map();
-  if (vocabReport?.targetClassSummaries) {
-    for (const vc of vocabReport.targetClassSummaries) {
-      if (!vc?.targetClass) continue;
-      const rules = new Map();
-      for (const vrs of vc.ruleSummaries ?? []) {
-        if (vrs?.ruleConstraint) {
-          rules.set(vrs.ruleConstraint, vrs);
-        }
-      }
+  for (const vc of vocabReport?.targetClassSummaries ?? []) {
+    if (vc?.targetClass) {
+      const rules = new Map(
+        (vc.ruleSummaries ?? [])
+          .filter((r) => r?.ruleConstraint)
+          .map((r) => [r.ruleConstraint, r]),
+      );
       vocabByClass.set(vc.targetClass, rules);
     }
   }
 
   const shaclByClass = new Map();
-  if (shaclReport?.targetClassSummaries) {
-    for (const sc of shaclReport.targetClassSummaries) {
-      if (!sc?.targetClass) continue;
+  for (const sc of shaclReport?.targetClassSummaries ?? []) {
+    if (sc?.targetClass) {
       const issuesByProp = new Map();
       for (const srs of sc.ruleSummaries ?? []) {
-        if (isIgnoredShaclConstraint(srs)) continue;
-        if (!srs?.ruleConstraint) continue;
+        if (isIgnoredShaclConstraint(srs) || !srs?.ruleConstraint) continue;
         if (!issuesByProp.has(srs.ruleConstraint)) {
           issuesByProp.set(srs.ruleConstraint, []);
         }
@@ -332,7 +313,6 @@ export function mergedClassSummaries(coverSummaries, vocabReport, shaclReport) {
   return coverSummaries.map((cs) => {
     const vocabRules = new Map(vocabByClass.get(cs.targetClass) || []);
     const shaclRules = new Map(shaclByClass.get(cs.targetClass) || []);
-
     const mergedRules = [];
 
     for (const rs of cs.ruleSummaries ?? []) {
@@ -340,7 +320,7 @@ export function mergedClassSummaries(coverSummaries, vocabReport, shaclReport) {
       if (vrs) vocabRules.delete(rs.ruleConstraint);
 
       const sIssues = shaclRules.get(rs.ruleConstraint) || [];
-      if (shaclRules.has(rs.ruleConstraint)) shaclRules.delete(rs.ruleConstraint);
+      if (sIssues.length) shaclRules.delete(rs.ruleConstraint);
 
       mergedRules.push({
         ruleConstraint: rs.ruleConstraint,
@@ -355,7 +335,7 @@ export function mergedClassSummaries(coverSummaries, vocabReport, shaclReport) {
 
     for (const vrs of vocabRules.values()) {
       const sIssues = shaclRules.get(vrs.ruleConstraint) || [];
-      if (shaclRules.has(vrs.ruleConstraint)) shaclRules.delete(vrs.ruleConstraint);
+      if (sIssues.length) shaclRules.delete(vrs.ruleConstraint);
 
       mergedRules.push({
         ruleConstraint: vrs.ruleConstraint,
