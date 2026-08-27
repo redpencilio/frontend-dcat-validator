@@ -1,6 +1,12 @@
 import { htmlSafe } from '@ember/template';
 import shortLabel from './uri-labels';
 
+/**
+ * Normalizes a SHACL severity URI into a frontend category.
+ *
+ * @param rule - Rule summary containing a severity URI.
+ * @returns Normalized severity category.
+ */
 export function severityOf(rule) {
   const uri = rule?.severity ?? '';
   switch (shortLabel(uri)) {
@@ -15,6 +21,14 @@ export function severityOf(rule) {
   }
 }
 
+/**
+ * Calculates the combined total of missing property violations and
+ * controlled vocabulary violations for a given class and severity tier.
+ *
+ * @param cls - Target class summary with its rules.
+ * @param sev - The severity tier to sum.
+ * @returns Total count of violations in that tier.
+ */
 export function severityViolations(cls, sev) {
   if (!cls?.ruleSummaries) return 0;
   return cls.ruleSummaries
@@ -25,6 +39,14 @@ export function severityViolations(cls, sev) {
     );
 }
 
+/**
+ * Returns all rules for a target class matching a specific severity tier,
+ * sorted in descending order by total violation count (highest impact first).
+ *
+ * @param cls - Target class summary.
+ * @param sev - Severity tier filter.
+ * @returns Sorted list of matching rule summaries.
+ */
 export function rulesFor(cls, sev) {
   if (!cls?.ruleSummaries) return [];
   return [...cls.ruleSummaries]
@@ -38,6 +60,15 @@ export function rulesFor(cls, sev) {
     });
 }
 
+/**
+ * Extracts and prepares invalid controlled vocabulary terms for display.
+ *
+ * Truncates the preview list to at most 10 terms and indicates whether
+ * additional terms exist beyond the preview.
+ *
+ * @param rule - rule where invalid vocabulary is used
+ * @returns Up to 10 (invalid) terms with indicator whether there are more
+ */
 export function violationsData(rule) {
   let rawTerms = [];
   if (rule?.ruleViolations?.length) {
@@ -66,6 +97,16 @@ export function violationsData(rule) {
   };
 }
 
+/**
+ * Sorts target classes by validation priority so the most critical classes appear first.
+ *
+ * Sorting formula:
+ * 1. Weighted score: (Mandatory violations * 1000) + (Recommended * 10) + Optional
+ * 2. Resource count (descending) as a secondary tie-breaker.
+ *
+ * @param summaries - List of target class summaries.
+ * @returns Sorted class summaries.
+ */
 export function sortedClasses(summaries) {
   if (!summaries) return [];
   return [...summaries].sort((a, b) => {
@@ -79,11 +120,31 @@ export function sortedClasses(summaries) {
   });
 }
 
+/**
+ * Calculates the grand total of discovered RDF resources across all target classes.
+ *
+ * @param summaries - Target class summaries.
+ * @returns Total resource count.
+ */
 export function totalResources(summaries) {
   if (!summaries) return 0;
   return summaries.reduce((sum, cls) => sum + (cls.resourceCount ?? 0), 0);
 }
 
+/**
+ * Computes coverage and vocabulary compliance statistics and progress bar styles for a single rule.
+ *
+ * Breakdown semantics:
+ * - `total`: Total instances of the target class.
+ * - `missing`: Instances lacking the property (coverage violation).
+ * - `covered`: Instances containing the property (`total - missing`).
+ * - `vocabInvalid`: Covered instances with invalid vocabulary terms.
+ * - `valid`: Covered instances with valid vocabulary terms (`covered - vocabInvalid`).
+ *
+ * @param rule - The rule summary.
+ * @param cls - The enclosing class summary.
+ * @returns Calculated metrics, percentage integers, and CSS width styles.
+ */
 export function ruleStats(rule, cls) {
   const total = cls?.resourceCount ?? 0;
   const missing = rule?.violationCount ?? 0;
@@ -118,6 +179,22 @@ export function ruleStats(rule, cls) {
   };
 }
 
+/**
+ * Merges the Coverage Report with the Controlled Vocabulary Report.
+ *
+ * The validator runs two distinct validations:
+ * 1. **Coverage Report**: Checks property presence and cardinality against DCAT-AP profile shapes.
+ * 2. **Vocabulary Report**: Validates that present property values conform to required controlled vocabularies.
+ *
+ * This function correlates both reports by target class and `ruleConstraint`:
+ * - Preserves the coverage severity (Mandatory / Recommended / Optional) for UI grouping.
+ * - Enriches each coverage rule with the vocabulary violation count and sample invalid terms.
+ * - Appends any vocabulary-only constraints that were not present in the coverage shapes.
+ *
+ * @param [coverSummaries] - Target class summaries from the coverage report.
+ * @param [vocabReport] - The full vocabulary validation summary.
+ * @returns Merged target class summaries ready for UI rendering.
+ */
 export function mergedClassSummaries(coverSummaries, vocabReport) {
   if (!coverSummaries?.length) return [];
 
@@ -176,6 +253,12 @@ export function mergedClassSummaries(coverSummaries, vocabReport) {
   });
 }
 
+/**
+ * Formats an ISO date string or timestamp into British English long format (e.g., "27 August 2026").
+ *
+ * @param d - The date value to format.
+ * @returns Formatted date string, or null if invalid.
+ */
 export function formatDate(d) {
   if (!d) return null;
   try {
