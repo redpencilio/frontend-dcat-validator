@@ -1,10 +1,18 @@
 import { htmlSafe } from '@ember/template';
+import shortLabel from './uri-labels';
 
 export function severityOf(rule) {
-  const uri = rule.severity ?? '';
-  if (uri.includes('Warning')) return 'warning';
-  if (uri.includes('Info')) return 'info';
-  return 'violation';
+  const uri = rule?.severity ?? '';
+  switch (shortLabel(uri)) {
+    case 'sh:Violation':
+      return 'violation';
+    case 'sh:Warning':
+      return 'warning';
+    case 'sh:Info':
+      return 'info';
+    default:
+      return 'info';
+  }
 }
 
 export function severityViolations(cls, sev) {
