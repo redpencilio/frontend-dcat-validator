@@ -49,7 +49,7 @@ export function severityViolations(cls, sev) {
  */
 export function rulesFor(cls, sev) {
   if (!cls?.ruleSummaries) return [];
-  return [...cls.ruleSummaries]
+  return Array.from(cls.ruleSummaries)
     .filter((r) => severityOf(r) === sev)
     .sort((a, b) => {
       const aViolations =
@@ -109,7 +109,7 @@ export function violationsData(rule) {
  */
 export function sortedClasses(summaries) {
   if (!summaries) return [];
-  return [...summaries].sort((a, b) => {
+  return Array.from(summaries).sort((a, b) => {
     const score = (cls) =>
       severityViolations(cls, 'violation') * 1000 +
       severityViolations(cls, 'warning') * 10 +
