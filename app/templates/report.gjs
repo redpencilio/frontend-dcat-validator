@@ -1,8 +1,8 @@
 import { pageTitle } from 'ember-page-title';
 import { LinkTo } from '@ember/routing';
-import { helper } from '@ember/component/helper';
 import ClassAccordion from '../components/class-accordion';
 import OverviewCard from '../components/overview-card';
+import { eq } from '../helpers/template';
 import {
   totalResources,
   sortedClasses,
@@ -11,10 +11,6 @@ import {
   specInfo,
   overallTierStats,
 } from '../utils/report-helpers';
-
-const eq = helper(function ([a, b]) {
-  return a === b;
-});
 
 <template>
   {{pageTitle "Validation Report"}}
