@@ -176,12 +176,3 @@ export function formatDate(d) {
     return null;
   }
 }
-
-export function splitToArray(string, splitter, mapfn) {
-  if (!string) return [];
-  let res = string.split(splitter);
-  if (mapfn) {
-    res = res.map((item) => mapfn(item));
-  }
-  return res;
-}
