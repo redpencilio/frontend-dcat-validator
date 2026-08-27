@@ -16,7 +16,7 @@ module.exports = function (environment) {
 
     APP: {
       // Feature flags
-      SHOW_SPEC_VERSION_TOGGLE: false,
+      SHOW_SPEC_VERSION_TOGGLE: true,
     },
   };
 
