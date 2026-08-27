@@ -1,12 +1,10 @@
 import { pageTitle } from 'ember-page-title';
 import { LinkTo } from '@ember/routing';
 import ClassAccordion from '../components/class-accordion';
-import shortLabel from '../utils/uri-labels';
 import {
   totalResources,
   sortedClasses,
   formatDate,
-  splitToArray,
   mergedClassSummaries,
 } from '../utils/report-helpers';
 

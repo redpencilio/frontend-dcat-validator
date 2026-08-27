@@ -39,7 +39,6 @@ export default class ReportRoute extends Route {
   setupController(controller, model) {
     super.setupController(controller, model);
     controller.errorMessage = this.#loadError;
-    controller.expandedGroup = null;
     controller.reportDate = null;
     controller.latestReportId = null;
     controller.latestReportDate = null;

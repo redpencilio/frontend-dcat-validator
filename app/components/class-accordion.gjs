@@ -10,7 +10,6 @@ import {
   rulesFor,
   violationsData,
   ruleStats,
-  splitToArray,
 } from '../utils/report-helpers';
 
 const eq = helper(function ([a, b]) {

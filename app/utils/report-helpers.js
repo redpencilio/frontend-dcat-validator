@@ -60,10 +60,6 @@ export function violationsData(rule) {
   };
 }
 
-export function violationsFor(rule) {
-  return violationsData(rule).terms;
-}
-
 export function sortedClasses(summaries) {
   if (!summaries) return [];
   return [...summaries].sort((a, b) => {
@@ -80,19 +76,6 @@ export function sortedClasses(summaries) {
 export function totalResources(summaries) {
   if (!summaries) return 0;
   return [...summaries].reduce((sum, cls) => sum + (cls.resourceCount ?? 0), 0);
-}
-
-export function compliant(rule, cls) {
-  return (cls.resourceCount ?? 0) - (rule.violationCount ?? 0);
-}
-
-export function compliancePct(rule, cls) {
-  if (!cls.resourceCount) return 0;
-  return Math.round((compliant(rule, cls) / cls.resourceCount) * 100);
-}
-
-export function barStyle(rule, cls) {
-  return htmlSafe(`width:${compliancePct(rule, cls)}%`);
 }
 
 export function ruleStats(rule, cls) {
