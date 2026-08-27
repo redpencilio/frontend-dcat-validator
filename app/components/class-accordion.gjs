@@ -10,28 +10,8 @@ import {
   rulesFor,
   violationsData,
   ruleStats,
-  splitToArray,
 } from '../utils/report-helpers';
-
-const eq = helper(function ([a, b]) {
-  return a === b;
-});
-
-const gt = helper(function ([a, b]) {
-  return a > b;
-});
-
-const isNotLast = helper(function ([index, array]) {
-  return index < array.length - 1;
-});
-
-const and = helper(function ([a, b]) {
-  return a && b;
-});
-
-const or = helper(function ([a, b]) {
-  return a || b;
-});
+import { eq, gt, isNotLast, and, or, get } from '../helpers/template';
 
 const invalidTermTooltip = helper(function ([termData]) {
   if (!termData) return '';
@@ -48,10 +28,6 @@ const invalidTermTooltip = helper(function ([termData]) {
     .join('\n');
 
   return `Invalid term:\n${termValue}\n\nDid you mean:\n${suggestionList}`;
-});
-
-const get = helper(function ([obj, key]) {
-  return obj[key];
 });
 
 const scoreTooltip = helper(function ([stats]) {

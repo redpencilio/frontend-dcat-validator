@@ -1,5 +1,4 @@
 import Controller from '@ember/controller';
-import { action } from '@ember/object';
 import { tracked } from '@glimmer/tracking';
 
 export default class ReportController extends Controller {
@@ -10,4 +9,3 @@ export default class ReportController extends Controller {
   @tracked vocabReport = null;
   @tracked shaclReport = null;
 }
-
