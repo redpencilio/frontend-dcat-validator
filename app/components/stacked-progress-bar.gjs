@@ -1,10 +1,6 @@
 import Component from '@glimmer/component';
-import { helper } from '@ember/component/helper';
 import { ruleStats } from '../utils/report-helpers';
-
-const gt = helper(function ([a, b]) {
-  return a > b;
-});
+import { gt } from '../helpers/template';
 
 export default class StackedProgressBar extends Component {
   get validColor() {
