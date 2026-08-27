@@ -211,6 +211,12 @@ function cleanPattern(pattern) {
     .replace(/\.\+/g, '*');
 }
 
+/**
+ * Checks whether a SHACL constraint is redundant with coverage or vocabulary checks.
+ *
+ * @param rule - SHACL rule summary.
+ * @returns True if the rule should be ignored.
+ */
 export function isIgnoredShaclConstraint(rule) {
   const constraint = rule?.constraint || '';
   if (constraint.includes('MinCountConstraintComponent')) return true;
@@ -229,6 +235,12 @@ export function isIgnoredShaclConstraint(rule) {
   );
 }
 
+/**
+ * Translates raw SHACL validator error messages into user-friendly advice.
+ *
+ * @param message - Raw validation message.
+ * @returns Formatted message string or null.
+ */
 export function formatShaclMessage(message) {
   if (!message) return null;
   const trimmed = message.trim();
