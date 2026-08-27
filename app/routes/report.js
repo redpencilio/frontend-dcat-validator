@@ -2,14 +2,7 @@ import Route from '@ember/routing/route';
 import { service } from '@ember/service';
 import { findRecord } from '@warp-drive/utilities/json-api';
 import { fetchLatestReport } from 'rpio-dcat-validator/utils/fetch-latest-report';
-
-function friendlyError(err) {
-  const status = err?.status ?? err?.response?.status;
-  if (status >= 500)
-    return 'Something went wrong on our side. Please try again in a moment.';
-  if (status === 404) return 'This report could not be found.';
-  return err?.message || 'Failed to load this report. Please try again.';
-}
+import { friendlyError } from 'rpio-dcat-validator/utils/errors';
 
 export default class ReportRoute extends Route {
   @service store;

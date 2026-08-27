@@ -2,13 +2,7 @@ import Route from '@ember/routing/route';
 import { service } from '@ember/service';
 import { findRecord } from '@warp-drive/utilities/json-api';
 import { fetchLatestReport } from 'rpio-dcat-validator/utils/fetch-latest-report';
-
-function friendlyError(err) {
-  const status = err?.status ?? err?.response?.status;
-  if (status >= 500) return 'Something went wrong on our side. Please try again in a moment.';
-  if (status === 404) return 'This job could not be found.';
-  return err?.message || 'Failed to load this job. Please try again.';
-}
+import { friendlyError } from 'rpio-dcat-validator/utils/errors';
 
 const SLOW_POLL_MS = 10_000;
 const FAST_POLL_MS = 3_000;
