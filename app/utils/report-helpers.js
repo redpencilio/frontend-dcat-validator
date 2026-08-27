@@ -36,8 +36,6 @@ export function violationsData(rule) {
     rawTerms = [...rule.ruleViolations].map((r) =>
       typeof r === 'string' ? r : r.value,
     );
-  } else if (rule?.message) {
-    rawTerms = splitToArray(rule.message, ', ');
   }
 
   const terms = rawTerms.filter(Boolean);
