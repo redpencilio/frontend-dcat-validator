@@ -1,4 +1,5 @@
 import { htmlSafe } from '@ember/template';
+import shortLabel from './uri-labels';
 
 const SPEC_LINKS = {
   '1.1.0': {
@@ -11,20 +12,41 @@ const SPEC_LINKS = {
   },
 };
 
+/**
+ * Returns specification label and URL for a given DCAT-AP version.
+ *
+ * @param version - The mobilityDCAT-AP version.
+ * @returns Specification info with label and URL.
+ */
 export function specInfo(version) {
   return SPEC_LINKS[version] || SPEC_LINKS['1.1.0'];
 }
 
+/**
+ * Normalizes a SHACL severity URI into a frontend category.
+ *
+ * @param rule - Rule summary containing a severity URI.
+ * @returns Normalized severity category.
+ */
 export function severityOf(rule) {
-  const uri = rule.severity ?? '';
+  const uri = rule?.severity ?? '';
+  if (uri.includes('Violation')) return 'violation';
   if (uri.includes('Warning')) return 'warning';
   if (uri.includes('Info')) return 'info';
-  return 'violation';
+  return 'info';
 }
 
+/**
+ * Calculates the combined total of missing property violations and
+ * controlled vocabulary violations for a given class and severity tier.
+ *
+ * @param cls - Target class summary with its rules.
+ * @param sev - The severity tier to sum.
+ * @returns Total count of violations in that tier.
+ */
 export function severityViolations(cls, sev) {
-  if (!cls.ruleSummaries) return 0;
-  return [...cls.ruleSummaries]
+  if (!cls?.ruleSummaries) return 0;
+  return cls.ruleSummaries
     .filter((r) => severityOf(r) === sev)
     .reduce(
       (sum, r) => sum + (r.violationCount ?? 0) + (r.vocabViolationCount ?? 0),
@@ -32,9 +54,17 @@ export function severityViolations(cls, sev) {
     );
 }
 
+/**
+ * Returns all rules for a target class matching a specific severity tier,
+ * sorted in descending order by total violation count (highest impact first).
+ *
+ * @param cls - Target class summary.
+ * @param sev - Severity tier filter.
+ * @returns Sorted list of matching rule summaries.
+ */
 export function rulesFor(cls, sev) {
-  if (!cls.ruleSummaries) return [];
-  return [...cls.ruleSummaries]
+  if (!cls?.ruleSummaries) return [];
+  return Array.from(cls.ruleSummaries)
     .filter((r) => severityOf(r) === sev)
     .sort((a, b) => {
       const aViolations =
@@ -45,65 +75,63 @@ export function rulesFor(cls, sev) {
     });
 }
 
+/**
+ * Extracts and prepares invalid controlled vocabulary terms and suggestions for display.
+ *
+ * Truncates the preview list to at most 10 terms and indicates whether
+ * additional terms exist beyond the preview.
+ *
+ * @param rule - Rule summary where invalid vocabulary is used.
+ * @returns Up to 10 (invalid) terms with suggestions and whether there are more.
+ */
 export function violationsData(rule) {
-  if (!rule) {
+  if (!rule?.ruleViolations?.length && !rule?.message) {
     return { terms: [], hasMore: false, isSingular: false };
   }
 
   let rawTerms = [];
-  try {
-    const rawViolations = rule.ruleViolations;
-    if (
-      rawViolations &&
-      (Array.isArray(rawViolations) || typeof rawViolations.length === 'number')
-    ) {
-      rawTerms = Array.from(rawViolations)
-        .map((r) => {
-          if (!r) return null;
-          const val = typeof r === 'string' ? r : r?.value || r?.uri || '';
-          let suggestions = [];
-          try {
-            const rawSugs = r?.suggestions || r?.termSuggestions;
-            if (
-              rawSugs &&
-              (Array.isArray(rawSugs) || typeof rawSugs.length === 'number')
-            ) {
-              suggestions = Array.from(rawSugs)
-                .filter(Boolean)
-                .sort((a, b) => {
-                  const scoreA =
-                    typeof a === 'object' && a !== null ? (a.score ?? 0) : 0;
-                  const scoreB =
-                    typeof b === 'object' && b !== null ? (b.score ?? 0) : 0;
-                  return scoreB - scoreA;
-                })
-                .map((sug) => ({
-                  value: sug.value,
-                  score: sug.score,
-                }))
-                .filter(Boolean);
-            }
-          } catch {
-            suggestions = [];
-          }
-          return {
-            value: val,
-            suggestions,
-          };
-        })
-        .filter(Boolean);
-    } else if (rule.message) {
-      rawTerms = splitToArray(rule.message, ', ').map((str) => ({
-        value: str,
+  if (rule.ruleViolations?.length) {
+    rawTerms = Array.from(rule.ruleViolations)
+      .map((violation) => {
+        if (!violation) return null;
+        const value =
+          typeof violation === 'string'
+            ? violation
+            : violation.value || violation.uri || '';
+
+        const rawSuggestions =
+          violation.suggestions || violation.termSuggestions || [];
+        const suggestions = Array.from(rawSuggestions)
+          .filter(Boolean)
+          .sort((a, b) => {
+            const scoreA =
+              typeof a === 'object' && a !== null ? (a.score ?? 0) : 0;
+            const scoreB =
+              typeof b === 'object' && b !== null ? (b.score ?? 0) : 0;
+            return scoreB - scoreA;
+          })
+          .map((suggestion) => ({
+            value: suggestion.value || suggestion,
+            score: suggestion.score,
+          }));
+
+        return {
+          value,
+          suggestions,
+        };
+      })
+      .filter((term) => term?.value);
+  } else if (rule.message) {
+    rawTerms = rule.message
+      .split(', ')
+      .filter(Boolean)
+      .map((termString) => ({
+        value: termString,
         suggestions: [],
       }));
-    }
-  } catch (err) {
-    console.warn('Error reading violationsData:', err);
-    rawTerms = [];
   }
 
-  const terms = rawTerms.filter((t) => t && t.value);
+  const terms = rawTerms.filter((term) => term && term.value);
   let hasMore = false;
 
   if (terms.length > 10) {
@@ -123,13 +151,29 @@ export function violationsData(rule) {
   };
 }
 
+/**
+ * Returns plain string values for invalid vocabulary terms in a rule.
+ *
+ * @param rule - Rule summary.
+ * @returns List of invalid term strings.
+ */
 export function violationsFor(rule) {
-  return violationsData(rule).terms.map((t) => t.value);
+  return violationsData(rule).terms.map((term) => term.value);
 }
 
+/**
+ * Sorts target classes by validation priority so the most critical classes appear first.
+ *
+ * Sorting formula:
+ * 1. Weighted score: (Mandatory violations * 1000) + (Recommended * 10) + Optional
+ * 2. Resource count (descending) as a secondary tie-breaker.
+ *
+ * @param summaries - List of target class summaries.
+ * @returns Sorted class summaries.
+ */
 export function sortedClasses(summaries) {
   if (!summaries) return [];
-  return [...summaries].sort((a, b) => {
+  return Array.from(summaries).sort((a, b) => {
     const score = (cls) =>
       severityViolations(cls, 'violation') * 1000 +
       severityViolations(cls, 'warning') * 10 +
@@ -140,24 +184,31 @@ export function sortedClasses(summaries) {
   });
 }
 
+/**
+ * Calculates the grand total of discovered RDF resources across all target classes.
+ *
+ * @param summaries - Target class summaries.
+ * @returns Total resource count.
+ */
 export function totalResources(summaries) {
   if (!summaries) return 0;
-  return [...summaries].reduce((sum, cls) => sum + (cls.resourceCount ?? 0), 0);
+  return summaries.reduce((sum, cls) => sum + (cls.resourceCount ?? 0), 0);
 }
 
-export function compliant(rule, cls) {
-  return (cls.resourceCount ?? 0) - (rule.violationCount ?? 0);
-}
-
-export function compliancePct(rule, cls) {
-  if (!cls.resourceCount) return 0;
-  return Math.round((compliant(rule, cls) / cls.resourceCount) * 100);
-}
-
-export function barStyle(rule, cls) {
-  return htmlSafe(`width:${compliancePct(rule, cls)}%`);
-}
-
+/**
+ * Computes coverage and vocabulary compliance statistics and progress bar styles for a single rule.
+ *
+ * Breakdown semantics:
+ * - `total`: Total instances of the target class.
+ * - `missing`: Instances lacking the property (coverage violation).
+ * - `covered`: Instances containing the property (`total - missing`).
+ * - `vocabInvalid`: Covered instances with invalid vocabulary terms.
+ * - `valid`: Covered instances with valid vocabulary terms (`covered - vocabInvalid`).
+ *
+ * @param rule - The rule summary.
+ * @param cls - The enclosing class summary.
+ * @returns Calculated metrics, percentage integers, and CSS width styles.
+ */
 export function ruleStats(rule, cls) {
   const total = cls?.resourceCount ?? 0;
   const missing = rule?.violationCount ?? 0;
@@ -192,6 +243,13 @@ export function ruleStats(rule, cls) {
   };
 }
 
+/**
+ * Calculates aggregated compliance statistics across all target classes for a given severity tier.
+ *
+ * @param classSummaries - Target class summaries.
+ * @param severity - Severity tier ('violation' or 'warning').
+ * @returns Aggregated compliance metrics and CSS bar widths.
+ */
 export function overallTierStats(classSummaries, severity) {
   if (!classSummaries || !classSummaries.length) {
     return {
@@ -258,120 +316,123 @@ export function overallTierStats(classSummaries, severity) {
   };
 }
 
+const NODE_KIND_MESSAGES = {
+  'sh:BlankNodeOrIRI':
+    'Value must be a valid URI resource (<https://...>), not a text string.',
+  'sh:IRI':
+    'Value must be a valid URI resource (<https://...>), not a text string.',
+  'sh:Literal':
+    'Value must be a text string literal, not a URI resource.',
+  'sh:BlankNode': 'Value must be a blank node resource.',
+};
+
+function cleanPattern(pattern) {
+  return pattern
+    .replace(/^\^|\$$/g, '')
+    .replace(/\\\./g, '.')
+    .replace(/\.\+/g, '*');
+}
+
+/**
+ * Checks whether a SHACL constraint is redundant with coverage or vocabulary checks.
+ *
+ * @param rule - SHACL rule summary.
+ * @returns True if the rule should be ignored.
+ */
 export function isIgnoredShaclConstraint(rule) {
   const constraint = rule?.constraint || '';
-  if (constraint.includes('MinCountConstraintComponent')) {
-    return true;
-  }
+  if (constraint.includes('MinCountConstraintComponent')) return true;
   if (
-    constraint.endsWith('#InConstraintComponent') ||
-    constraint === 'InConstraintComponent' ||
-    (constraint.includes('InConstraintComponent') &&
-      !constraint.includes('LanguageInConstraintComponent'))
+    constraint.includes('InConstraintComponent') &&
+    !constraint.includes('LanguageInConstraintComponent')
   ) {
     return true;
   }
-  const msg = (rule?.message || '').toLowerCase();
-  if (
-    msg.includes('at least one') ||
-    msg.includes('exactly one value must be provided') ||
-    msg.includes('is mandatory. exactly one')
-  ) {
-    return true;
-  }
-  return false;
+
+  const message = (rule?.message || '').toLowerCase();
+  return (
+    message.includes('at least one') ||
+    message.includes('exactly one') ||
+    message.includes('is mandatory')
+  );
 }
 
+/**
+ * Translates raw SHACL validator error messages into user-friendly advice.
+ *
+ * @param message - Raw validation message.
+ * @returns Formatted message string or null.
+ */
 export function formatShaclMessage(message) {
   if (!message) return null;
-
   const trimmed = message.trim();
 
-  // 1. NodeKindConstraint translations
-  if (/^Value is not of Node Kind sh:BlankNodeOrIRI$/i.test(trimmed)) {
-    return 'Value must be a valid URI resource (<https://...>), not a text string.';
-  }
-  if (/^Value is not of Node Kind sh:IRI$/i.test(trimmed)) {
-    return 'Value must be a valid URI resource (<https://...>), not a text string.';
-  }
-  if (/^Value is not of Node Kind sh:Literal$/i.test(trimmed)) {
-    return 'Value must be a text string literal, not a URI resource.';
-  }
-  if (/^Value is not of Node Kind sh:BlankNode$/i.test(trimmed)) {
-    return 'Value must be a blank node resource.';
+  // 1. NodeKind translations
+  const nodeKindMatch = trimmed.match(/^Value is not of Node Kind (sh:\w+)$/i);
+  if (nodeKindMatch && NODE_KIND_MESSAGES[nodeKindMatch[1]]) {
+    return NODE_KIND_MESSAGES[nodeKindMatch[1]];
   }
 
-  // 2. pySHACL "must conform to one or more shapes in [ sh:pattern ... ]"
-  const orPatternMatch = message.match(
+  // 2. Multiple pattern match failure
+  const orMatch = trimmed.match(
     /Node\s+<([^>]+)>\s+must conform to one or more shapes in\s+(.*)/i,
   );
-  if (orPatternMatch) {
-    const invalidNode = orPatternMatch[1];
-    const rest = orPatternMatch[2];
-    const patterns = [];
-    const patternRegex = /Literal\("([^"]+)"\)/g;
-    let match;
-    while ((match = patternRegex.exec(rest)) !== null) {
-      let clean = match[1]
-        .replace(/^\^/, '')
-        .replace(/\$$/, '')
-        .replace(/\\\./g, '.')
-        .replace(/\.\+/g, '*');
-      patterns.push(clean);
-    }
-    if (patterns.length > 0) {
-      return `Invalid URI <${invalidNode}>. Must match: ${patterns.join(' or ')}`;
+  if (orMatch) {
+    const patterns = Array.from(
+      orMatch[2].matchAll(/Literal\("([^"]+)"\)/g),
+      (m) => cleanPattern(m[1]),
+    );
+    if (patterns.length) {
+      return `Invalid URI <${orMatch[1]}>. Must match: ${patterns.join(' or ')}`;
     }
   }
 
-  // 3. pySHACL single pattern match failure
-  const singlePatternMatch = message.match(
+  // 3. Single pattern match failure
+  const singleMatch = trimmed.match(
     /Node\s+<([^>]+)>\s+does not match\s+pattern\s+(?:Literal\("([^"]+)"\)|"([^"]+)")/i,
   );
-  if (singlePatternMatch) {
-    const invalidNode = singlePatternMatch[1];
-    const rawPattern = singlePatternMatch[2] || singlePatternMatch[3];
-    const cleanPattern = rawPattern
-      .replace(/^\^/, '')
-      .replace(/\$$/, '')
-      .replace(/\\\./g, '.')
-      .replace(/\.\+/g, '*');
-    return `Invalid URI <${invalidNode}>. Must match: ${cleanPattern}`;
+  if (singleMatch) {
+    const pattern = cleanPattern(singleMatch[2] || singleMatch[3] || '');
+    return `Invalid URI <${singleMatch[1]}>. Must match: ${pattern}`;
   }
 
-  // 4. Clean up generic Literal("...") or escaped dots from other messages
-  return message.replace(/Literal\("([^"]+)"\)/g, '$1').replace(/\\\./g, '.');
+  // 4. Clean up generic Literal("...") or escaped dots
+  return trimmed.replace(/Literal\("([^"]+)"\)/g, '$1').replace(/\\\./g, '.');
 }
 
+/**
+ * Merges Coverage Report, Controlled Vocabulary Report, and SHACL Validation Report.
+ *
+ * @param coverSummaries - Target class summaries from the coverage report.
+ * @param vocabReport - The full vocabulary validation summary.
+ * @param shaclReport - The full SHACL validation summary.
+ * @returns Merged target class summaries ready for UI rendering.
+ */
 export function mergedClassSummaries(coverSummaries, vocabReport, shaclReport) {
-  if (!coverSummaries) return [];
+  if (!coverSummaries?.length) return [];
 
-  const vocabByClass = {};
-  if (vocabReport?.targetClassSummaries) {
-    for (const vc of vocabReport.targetClassSummaries) {
-      if (!vc?.targetClass) continue;
-      const rules = {};
-      for (const vrs of vc.ruleSummaries ?? []) {
-        if (vrs?.ruleConstraint) {
-          rules[vrs.ruleConstraint] = vrs;
-        }
-      }
-      vocabByClass[vc.targetClass] = rules;
+  const vocabByClass = new Map();
+  for (const vc of vocabReport?.targetClassSummaries ?? []) {
+    if (vc?.targetClass) {
+      const rules = new Map(
+        (vc.ruleSummaries ?? [])
+          .filter((r) => r?.ruleConstraint)
+          .map((r) => [r.ruleConstraint, r]),
+      );
+      vocabByClass.set(vc.targetClass, rules);
     }
   }
 
-  const shaclByClass = {};
-  if (shaclReport?.targetClassSummaries) {
-    for (const sc of shaclReport.targetClassSummaries) {
-      if (!sc?.targetClass) continue;
-      const issuesByProp = {};
+  const shaclByClass = new Map();
+  for (const sc of shaclReport?.targetClassSummaries ?? []) {
+    if (sc?.targetClass) {
+      const issuesByProp = new Map();
       for (const srs of sc.ruleSummaries ?? []) {
-        if (isIgnoredShaclConstraint(srs)) continue;
-        if (!srs?.ruleConstraint) continue;
-        if (!issuesByProp[srs.ruleConstraint]) {
-          issuesByProp[srs.ruleConstraint] = [];
+        if (isIgnoredShaclConstraint(srs) || !srs?.ruleConstraint) continue;
+        if (!issuesByProp.has(srs.ruleConstraint)) {
+          issuesByProp.set(srs.ruleConstraint, []);
         }
-        issuesByProp[srs.ruleConstraint].push({
+        issuesByProp.get(srs.ruleConstraint).push({
           ruleConstraint: srs.ruleConstraint,
           constraint: srs.constraint,
           severity: srs.severity,
@@ -379,37 +440,36 @@ export function mergedClassSummaries(coverSummaries, vocabReport, shaclReport) {
           count: srs.violationCount ?? 0,
         });
       }
-      shaclByClass[sc.targetClass] = issuesByProp;
+      shaclByClass.set(sc.targetClass, issuesByProp);
     }
   }
 
-  const result = [];
-  for (const cs of coverSummaries) {
-    const vocabRules = { ...(vocabByClass[cs.targetClass] || {}) };
-    const shaclRules = { ...(shaclByClass[cs.targetClass] || {}) };
-
+  return coverSummaries.map((cs) => {
+    const vocabRules = new Map(vocabByClass.get(cs.targetClass) || []);
+    const shaclRules = new Map(shaclByClass.get(cs.targetClass) || []);
     const mergedRules = [];
-    for (const rs of cs.ruleSummaries ?? []) {
-      const vrs = vocabRules[rs.ruleConstraint];
-      if (vrs) delete vocabRules[rs.ruleConstraint];
 
-      const sIssues = shaclRules[rs.ruleConstraint] || [];
-      if (shaclRules[rs.ruleConstraint]) delete shaclRules[rs.ruleConstraint];
+    for (const rs of cs.ruleSummaries ?? []) {
+      const vrs = vocabRules.get(rs.ruleConstraint);
+      if (vrs) vocabRules.delete(rs.ruleConstraint);
+
+      const sIssues = shaclRules.get(rs.ruleConstraint) || [];
+      if (sIssues.length) shaclRules.delete(rs.ruleConstraint);
 
       mergedRules.push({
         ruleConstraint: rs.ruleConstraint,
         violationCount: rs.violationCount ?? 0,
         vocabViolationCount: vrs?.violationCount ?? 0,
         severity: rs.severity,
-        message: vrs?.message ?? null,
+        message: vrs?.message ?? rs.message ?? null,
         ruleViolations: vrs?.ruleViolations ?? rs?.ruleViolations ?? [],
         shaclIssues: sIssues,
       });
     }
 
-    for (const vrs of Object.values(vocabRules)) {
-      const sIssues = shaclRules[vrs.ruleConstraint] || [];
-      if (shaclRules[vrs.ruleConstraint]) delete shaclRules[vrs.ruleConstraint];
+    for (const vrs of vocabRules.values()) {
+      const sIssues = shaclRules.get(vrs.ruleConstraint) || [];
+      if (sIssues.length) shaclRules.delete(vrs.ruleConstraint);
 
       mergedRules.push({
         ruleConstraint: vrs.ruleConstraint,
@@ -422,7 +482,7 @@ export function mergedClassSummaries(coverSummaries, vocabReport, shaclReport) {
       });
     }
 
-    for (const [propUri, sIssues] of Object.entries(shaclRules)) {
+    for (const [propUri, sIssues] of shaclRules.entries()) {
       mergedRules.push({
         ruleConstraint: propUri,
         violationCount: 0,
@@ -434,16 +494,20 @@ export function mergedClassSummaries(coverSummaries, vocabReport, shaclReport) {
       });
     }
 
-    result.push({
+    return {
       targetClass: cs.targetClass,
-      resourceCount: cs.resourceCount,
+      resourceCount: cs.resourceCount ?? 0,
       ruleSummaries: mergedRules,
-    });
-  }
-
-  return result;
+    };
+  });
 }
 
+/**
+ * Formats an ISO date string or timestamp into British English long format (e.g., "27 August 2026").
+ *
+ * @param d - The date value to format.
+ * @returns Formatted date string, or null if invalid.
+ */
 export function formatDate(d) {
   if (!d) return null;
   try {
@@ -453,13 +517,4 @@ export function formatDate(d) {
   } catch {
     return null;
   }
-}
-
-export function splitToArray(string, splitter, mapfn) {
-  if (!string) return [];
-  let res = string.split(splitter);
-  if (mapfn) {
-    res = res.map((item) => mapfn(item));
-  }
-  return res;
 }
