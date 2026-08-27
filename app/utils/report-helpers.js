@@ -18,7 +18,7 @@ export function severityViolations(cls, sev) {
 }
 
 export function rulesFor(cls, sev) {
-  if (!cls.ruleSummaries) return [];
+  if (!cls?.ruleSummaries) return [];
   return [...cls.ruleSummaries]
     .filter((r) => severityOf(r) === sev)
     .sort((a, b) => {
@@ -119,6 +119,7 @@ export function mergedClassSummaries(coverSummaries, vocabReport) {
     if (vc.targetClass) {
       vocabByClass.set(vc.targetClass, vc);
     }
+  }
 
   return coverSummaries.map((cs) => {
     const vc = cs.targetClass ? vocabByClass.get(cs.targetClass) : undefined;
@@ -131,6 +132,7 @@ export function mergedClassSummaries(coverSummaries, vocabReport) {
     }
 
     const mergedRules = [];
+
     for (const rs of cs.ruleSummaries ?? []) {
       const vrs = vocabByConstraint.get(rs.ruleConstraint);
       if (vrs) {
