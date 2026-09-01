@@ -4,6 +4,7 @@ import {
   mergedClassSummaries,
   severityViolations,
   rulesFor,
+  formatShaclMessage,
 } from 'rpio-dcat-validator/utils/report-helpers';
 
 module('Unit | Utility | report-helpers', function () {
@@ -119,6 +120,119 @@ module('Unit | Utility | report-helpers', function () {
     assert.strictEqual(
       transportRule.message,
       'https://example.org/invalid-mode',
+    );
+  });
+
+  test('mergedClassSummaries integrates SHACL report and filters out minCount and inConstraint', function (assert) {
+    const coverSummaries = [
+      {
+        targetClass: 'http://www.w3.org/ns/dcat#Dataset',
+        resourceCount: 20,
+        ruleSummaries: [
+          {
+            ruleConstraint: 'http://purl.org/dc/terms/description',
+            violationCount: 0,
+            severity: 'http://www.w3.org/ns/shacl#Violation',
+          },
+          {
+            ruleConstraint: 'http://purl.org/dc/terms/accrualPeriodicity',
+            violationCount: 16,
+            severity: 'http://www.w3.org/ns/shacl#Violation',
+          },
+        ],
+      },
+    ];
+
+    const shaclReport = {
+      targetClassSummaries: [
+        {
+          targetClass: 'http://www.w3.org/ns/dcat#Dataset',
+          ruleSummaries: [
+            {
+              ruleConstraint: 'http://purl.org/dc/terms/accrualPeriodicity',
+              violationCount: 16,
+              constraint: 'http://www.w3.org/ns/shacl#MinCountConstraintComponent',
+              message: 'Frequency is mandatory. Exactly one value must be provided',
+              severity: 'http://www.w3.org/ns/shacl#Violation',
+            },
+            {
+              ruleConstraint: 'http://purl.org/dc/terms/description',
+              violationCount: 20,
+              constraint: 'http://www.w3.org/ns/shacl#LanguageInConstraintComponent',
+              message:
+                'Description is mandatory, must have a valid EU language tag, cannot be empty, each language only once',
+              severity: 'http://www.w3.org/ns/shacl#Warning',
+            },
+          ],
+        },
+      ],
+    };
+
+    const merged = mergedClassSummaries(coverSummaries, null, shaclReport);
+    assert.strictEqual(merged.length, 1);
+    const rules = merged[0].ruleSummaries;
+
+    const periodicityRule = rules.find(
+      (r) => r.ruleConstraint === 'http://purl.org/dc/terms/accrualPeriodicity',
+    );
+    assert.ok(periodicityRule);
+    assert.strictEqual(
+      periodicityRule.shaclIssues.length,
+      0,
+      'MinCount issue is filtered out for accrualPeriodicity',
+    );
+
+    const descRule = rules.find(
+      (r) => r.ruleConstraint === 'http://purl.org/dc/terms/description',
+    );
+    assert.ok(descRule);
+    assert.strictEqual(
+      descRule.shaclIssues.length,
+      1,
+      'LanguageIn issue is attached to description',
+    );
+    assert.strictEqual(
+      descRule.shaclIssues[0].message,
+      'Description is mandatory, must have a valid EU language tag, cannot be empty, each language only once',
+    );
+    assert.strictEqual(descRule.shaclIssues[0].count, 20);
+    assert.strictEqual(
+      descRule.shaclIssues[0].severity,
+      'http://www.w3.org/ns/shacl#Warning',
+    );
+  });
+
+  test('formatShaclMessage formats pySHACL pattern and or-constraint messages cleanly', function (assert) {
+    const rawOrPattern =
+      'Node <https://example.org/frequency/every-10-seconds> must conform to one or more shapes in [ sh:pattern Literal("^http://publications\\.europa\\.eu/resource/authority/frequency/.+$") ] , [ sh:pattern Literal("^https://w3id\\.org/mobilitydcat-ap/update-frequency/.+$") ]';
+
+    const formatted = formatShaclMessage(rawOrPattern);
+    assert.strictEqual(
+      formatted,
+      'Invalid URI <https://example.org/frequency/every-10-seconds>. Must match: http://publications.europa.eu/resource/authority/frequency/* or https://w3id.org/mobilitydcat-ap/update-frequency/*',
+    );
+
+    const rawSinglePattern =
+      'Node <https://example.org/bad-theme> does not match pattern Literal("^https://w3id\\.org/mobilitydcat-ap/mobility-theme/.+$")';
+    const formattedSingle = formatShaclMessage(rawSinglePattern);
+    assert.strictEqual(
+      formattedSingle,
+      'Invalid URI <https://example.org/bad-theme>. Must match: https://w3id.org/mobilitydcat-ap/mobility-theme/*',
+    );
+  });
+
+  test('formatShaclMessage translates NodeKind messages into plain English', function (assert) {
+    assert.strictEqual(
+      formatShaclMessage('Value is not of Node Kind sh:BlankNodeOrIRI'),
+      'Value must be a valid URI resource (<https://...>), not a text string.',
+    );
+    assert.strictEqual(
+      formatShaclMessage('Value is not of Node Kind sh:IRI'),
+      'Value must be a valid URI resource (<https://...>), not a text string.',
+    );
+    assert.strictEqual(
+      formatShaclMessage('Value is not of Node Kind sh:Literal'),
+      'Value must be a text string literal, not a URI resource.',
     );
   });
 });

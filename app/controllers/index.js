@@ -8,6 +8,7 @@ import {
   serializeResources,
 } from '@warp-drive/utilities/json-api';
 import { fetchLatestReport } from 'rpio-dcat-validator/utils/fetch-latest-report';
+import ENV from 'rpio-dcat-validator/config/environment';
 
 const KNOWN_ENDPOINTS = [
   {
@@ -28,7 +29,7 @@ const KNOWN_ENDPOINTS = [
   {
     country: 'Finland',
     label: 'catalog.digitraffic.fi',
-    url: ' https://catalog.digitraffic.fi/en/catalog.ttl'
+    url: ' https://catalog.digitraffic.fi/en/catalog.ttl',
   },
   {
     country: 'Germany',
@@ -92,8 +93,10 @@ export default class IndexController extends Controller {
   @service router;
 
   knownEndpoints = KNOWN_ENDPOINTS;
+  showSpecVersionToggle = ENV.APP?.SHOW_SPEC_VERSION_TOGGLE ?? false;
 
   @tracked endpointUrl = '';
+  @tracked dcatApVersion = '1.1.0';
   @tracked submitting = false;
   @tracked errorMessage = null;
   @tracked latestReportId = null;
@@ -103,6 +106,16 @@ export default class IndexController extends Controller {
     this.endpointUrl = event.target.value;
     this.errorMessage = null;
     this.latestReportId = null;
+  }
+
+  @action
+  updateVersion(event) {
+    this.dcatApVersion = event.target.value;
+  }
+
+  @action
+  setVersion(version) {
+    this.dcatApVersion = version;
   }
 
   @action
@@ -123,6 +136,7 @@ export default class IndexController extends Controller {
     try {
       const job = this.store.createRecord('validation-jobs', {
         endpointUrl: this.endpointUrl,
+        dcatApVersion: this.dcatApVersion,
       });
       const init = createRecord(job);
       init.body = JSON.stringify(
@@ -140,7 +154,7 @@ export default class IndexController extends Controller {
     } catch (err) {
       this.errorMessage = friendlyError(err);
       this.submitting = false;
-      fetchLatestReport(this.endpointUrl).then((latest) => {
+      fetchLatestReport(this.endpointUrl, this.dcatApVersion).then((latest) => {
         this.latestReportId = latest?.id ?? null;
       });
     }

@@ -21,6 +21,32 @@ const scoreTooltip = helper(function ([stats]) {
   return `Valid: ${stats.validPct}% (${stats.valid}/${stats.total} covered & valid)\nNot Covered: ${stats.missing} missing`;
 });
 
+const shaclSeverityConfig = helper(function ([severity]) {
+  const s = severity || '';
+  if (s.includes('Violation')) {
+    return {
+      textColor: 'text-red-700',
+      icon: '🚫',
+      label: 'Violation',
+      tooltip: 'Violation: Critical specification rule broken',
+    };
+  }
+  if (s.includes('Info')) {
+    return {
+      textColor: 'text-blue-700',
+      icon: 'ℹ️',
+      label: 'Notice',
+      tooltip: 'Notice: Informational advisory',
+    };
+  }
+  return {
+    textColor: 'text-amber-700',
+    icon: '⚠️',
+    label: 'Warning',
+    tooltip: 'Warning: Quality guideline or best practice not met',
+  };
+});
+
 const SEVERITY_CONFIG = {
   violation: {
     headerBg: 'bg-red-50',
@@ -94,6 +120,29 @@ const SeverityGroup = <template>
                     </div>
                   {{/if}}
                 {{/let}}
+                {{#if rule.shaclIssues.length}}
+                  <div class="mt-1 space-y-1">
+                    {{#each rule.shaclIssues as |issue|}}
+                      {{#let (shaclSeverityConfig issue.severity) as |sCfg|}}
+                        <div class="flex items-start gap-1 text-[11px] {{sCfg.textColor}}">
+                          <span class="shrink-0 cursor-help" title={{sCfg.tooltip}}>{{sCfg.icon}}</span>
+                          <span>
+                            {{#if issue.message}}
+                              {{issue.message}}
+                            {{else if issue.constraint}}
+                              Quality issue ({{shortLabel issue.constraint}})
+                            {{else}}
+                              Quality constraint issue
+                            {{/if}}
+                            {{#if (gt issue.count 0)}}
+                              <span class="font-normal font-sans text-zinc-400">({{issue.count}} {{if (eq issue.count 1) "issue" "issues"}})</span>
+                            {{/if}}
+                          </span>
+                        </div>
+                      {{/let}}
+                    {{/each}}
+                  </div>
+                {{/if}}
               </td>
               <td
                 class="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-xs
@@ -231,7 +280,25 @@ export default class ClassAccordion extends Component {
               <tr class="border-b border-zinc-100 bg-white">
                 <th
                   class="px-5 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-zinc-400"
-                >Property</th>
+                >
+                  <span
+                    class="inline-flex cursor-help items-center gap-1 hover:text-zinc-600"
+                    title="Issue Severities:&#10;🚫 Violation: Critical rule broken&#10;⚠️ Warning: Quality guideline not met&#10;ℹ️ Notice: Informational advisory"
+                  >
+                    Property
+                    <svg
+                      class="h-3 w-3 text-zinc-400"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                        clip-rule="evenodd"
+                      />
+                    </svg>
+                  </span>
+                </th>
                 <th
                   class="px-4 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-zinc-400"
                 >Compliant</th>

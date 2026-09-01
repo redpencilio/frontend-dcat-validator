@@ -6,6 +6,7 @@ import {
   sortedClasses,
   formatDate,
   mergedClassSummaries,
+  specInfo
 } from '../utils/report-helpers';
 
 <template>
@@ -21,17 +22,14 @@ import {
     {{else}}
       {{! ── Report header ── }}
       <header class="border-b-2 border-zinc-900 pb-8">
-        <p
-          class="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400"
-        >
-          <a
-            href="https://mobilitydcat-ap.github.io/mobilityDCAT-AP/releases/1.1.0/index.html"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="hover:text-zinc-600 hover:underline"
-          >
-            DCAT-AP Mobility 1.1.0
-          </a>
+        <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">
+          {{#let (specInfo @controller.dcatApVersion) as |spec|}}
+            <a href={{spec.url}}
+              target="_blank" rel="noopener noreferrer"
+              class="hover:text-zinc-600 hover:underline">
+              {{spec.label}}
+            </a>
+          {{/let}}
         </p>
         <h1 class="mt-1 text-4xl font-bold tracking-tight text-zinc-900">
           Validation Report
@@ -86,7 +84,9 @@ import {
 
         {{#let
           (mergedClassSummaries
-            @model.targetClassSummaries @controller.vocabReport
+            @model.targetClassSummaries
+            @controller.vocabReport
+            @controller.shaclReport
           )
           as |summaries|
         }}
