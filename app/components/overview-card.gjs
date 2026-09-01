@@ -41,7 +41,16 @@ export default class OverviewCard extends Component {
     return this.args.badgeClass || this.config.badgeClass;
   }
 
+  get isComplete() {
+    const s = this.args.stats;
+    if (!s) return false;
+    return s.totalMissing === 0 && s.totalVocabInvalid === 0;
+  }
+
   get validBarColor() {
+    if (this.isComplete) {
+      return 'bg-green-500';
+    }
     return this.args.validBarColor || this.config.validBarColor;
   }
 
