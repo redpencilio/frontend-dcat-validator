@@ -6,8 +6,8 @@ const TIER_CONFIG = {
     titleColor: 'text-red-600',
     badgeLabel: 'Strict Specification',
     badgeClass: 'bg-red-50 text-red-700',
-    validBarColor: 'bg-green-500',
-    vocabBarColor: 'bg-green-300',
+    validBarColor: 'bg-red-500',
+    vocabBarColor: 'bg-red-300',
   },
   warning: {
     title: 'Recommended Compliance',
