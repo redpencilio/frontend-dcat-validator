@@ -5,6 +5,7 @@ import {
   severityViolations,
   rulesFor,
   formatShaclMessage,
+  overallTierStats,
 } from 'rpio-dcat-validator/utils/report-helpers';
 
 module('Unit | Utility | report-helpers', function () {
@@ -234,5 +235,75 @@ module('Unit | Utility | report-helpers', function () {
       formatShaclMessage('Value is not of Node Kind sh:Literal'),
       'Value must be a text string literal, not a URI resource.',
     );
+  });
+
+  test('overallTierStats computes aggregate compliance correctly for mandatory and recommended tiers', function (assert) {
+    const classSummaries = [
+      {
+        targetClass: 'http://www.w3.org/ns/dcat#Dataset',
+        resourceCount: 10,
+        ruleSummaries: [
+          {
+            ruleConstraint: 'http://purl.org/dc/terms/title',
+            violationCount: 0, // 10 valid
+            vocabViolationCount: 0,
+            severity: 'http://www.w3.org/ns/shacl#Violation', // Mandatory
+          },
+          {
+            ruleConstraint: 'http://purl.org/dc/terms/spatial',
+            violationCount: 2, // 2 missing -> 8 covered, 3 invalid vocab -> 5 valid
+            vocabViolationCount: 3,
+            severity: 'http://www.w3.org/ns/shacl#Violation', // Mandatory
+          },
+          {
+            ruleConstraint: 'https://w3id.org/mobilitydcat-ap#transportMode',
+            violationCount: 4, // 4 missing -> 6 covered, 0 invalid vocab -> 6 valid
+            vocabViolationCount: 0,
+            severity: 'http://www.w3.org/ns/shacl#Warning', // Recommended
+          },
+        ],
+      },
+      {
+        targetClass: 'http://www.w3.org/ns/dcat#Distribution',
+        resourceCount: 5,
+        ruleSummaries: [
+          {
+            ruleConstraint: 'http://www.w3.org/ns/dcat#accessURL',
+            violationCount: 0, // 5 valid
+            vocabViolationCount: 0,
+            severity: 'http://www.w3.org/ns/shacl#Violation', // Mandatory
+          },
+        ],
+      },
+    ];
+
+    // Mandatory:
+    // Total expected: 10 (title) + 10 (spatial) + 5 (accessURL) = 25
+    // Total valid: 10 + 5 + 5 = 20
+    // Total covered: 10 + 8 + 5 = 23
+    // Total vocab invalid: 3
+    // Total missing: 2
+    // validPct: 20 / 25 = 80%
+    // coveredPct: 23 / 25 = 92%
+    const mandStats = overallTierStats(classSummaries, 'violation');
+    assert.strictEqual(mandStats.totalExpected, 25, 'Mandatory expected is 25');
+    assert.strictEqual(mandStats.totalValid, 20, 'Mandatory valid is 20');
+    assert.strictEqual(mandStats.totalCovered, 23, 'Mandatory covered is 23');
+    assert.strictEqual(mandStats.totalVocabInvalid, 3, 'Mandatory vocab invalid is 3');
+    assert.strictEqual(mandStats.totalMissing, 2, 'Mandatory missing is 2');
+    assert.strictEqual(mandStats.validPct, 80, 'Mandatory validPct is 80%');
+    assert.strictEqual(mandStats.coveredPct, 92, 'Mandatory coveredPct is 92%');
+    assert.true(mandStats.hasVocabInvalid, 'hasVocabInvalid is true');
+
+    // Recommended:
+    // Total expected: 10 (transportMode) = 10
+    // Total valid: 6
+    // Total covered: 6
+    // validPct: 60%
+    const recStats = overallTierStats(classSummaries, 'warning');
+    assert.strictEqual(recStats.totalExpected, 10, 'Recommended expected is 10');
+    assert.strictEqual(recStats.totalValid, 6, 'Recommended valid is 6');
+    assert.strictEqual(recStats.validPct, 60, 'Recommended validPct is 60%');
+    assert.false(recStats.hasVocabInvalid, 'Recommended hasVocabInvalid is false');
   });
 });
