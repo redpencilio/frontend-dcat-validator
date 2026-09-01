@@ -1,111 +1,12 @@
 import { pageTitle } from 'ember-page-title';
 import { LinkTo } from '@ember/routing';
-import { on } from '@ember/modifier';
-import { fn } from '@ember/helper';
-import { htmlSafe } from '@ember/template';
-
-const PREFIX_MAP = [
-  ['adms',   'http://www.w3.org/ns/adms#'],
-  ['cnt',    'http://www.w3.org/2011/content#'],
-  ['dcat',   'http://www.w3.org/ns/dcat#'],
-  ['dcatap',         'http://data.europa.eu/r5r/'],
-  ['mobilitydcatap', 'https://w3id.org/mobilitydcat-ap#'],
-  ['dct',    'http://purl.org/dc/terms/'],
-  ['dqv',    'http://www.w3.org/ns/dqv#'],
-  ['foaf',   'http://xmlns.com/foaf/0.1/'],
-  ['locn',   'http://www.w3.org/ns/locn#'],
-  ['oa',     'https://www.w3.org/ns/oa#'],
-  ['org',    'http://www.w3.org/ns/org#'],
-  ['owl',    'http://www.w3.org/2002/07/owl#'],
-  ['rdf',    'http://www.w3.org/1999/02/22-rdf-syntax-ns#'],
-  ['rdfs',   'http://www.w3.org/2000/01/rdf-schema#'],
-  ['skos',   'http://www.w3.org/2004/02/skos/core#'],
-  ['spdx',   'http://spdx.org/rdf/terms#'],
-  ['vcard',  'http://www.w3.org/2006/vcard/ns#'],
-  ['xsd',    'http://www.w3.org/2001/XMLSchema#'],
-];
-
-function shortLabel(uri) {
-  if (!uri) return '—';
-  for (const [prefix, ns] of PREFIX_MAP) {
-    if (uri.startsWith(ns)) return `${prefix}:${uri.slice(ns.length)}`;
-  }
-  const local = uri.includes('#') ? uri.split('#').at(-1) : uri.split('/').at(-1);
-  return local || uri;
-}
-
-function eq(a, b) {
-  return a === b;
-}
-
-function totalResources(summaries) {
-  if (!summaries) return 0;
-  return [...summaries].reduce((sum, cls) => sum + (cls.resourceCount ?? 0), 0);
-}
-
-function severityViolations(cls, sev) {
-  if (!cls.ruleSummaries) return 0;
-  return [...cls.ruleSummaries]
-    .filter((r) => severityOf(r) === sev)
-    .reduce((sum, r) => sum + (r.violationCount ?? 0), 0);
-}
-
-function classViolations(cls) {
-  return severityViolations(cls, 'violation');
-}
-
-function sortedClasses(summaries) {
-  if (!summaries) return [];
-  return [...summaries].sort((a, b) => {
-    const score = (cls) =>
-      severityViolations(cls, 'violation') * 1000 +
-      severityViolations(cls, 'warning') * 10 +
-      severityViolations(cls, 'info');
-    const diff = score(b) - score(a);
-    if (diff !== 0) return diff;
-    return (b.resourceCount ?? 0) - (a.resourceCount ?? 0);
-  });
-}
-
-function severityOf(rule) {
-  const uri = rule.severity ?? '';
-  if (uri.includes('Warning')) return 'warning';
-  if (uri.includes('Info')) return 'info';
-  return 'violation';
-}
-
-function rulesFor(cls, sev) {
-  if (!cls.ruleSummaries) return [];
-  return [...cls.ruleSummaries]
-    .filter((r) => severityOf(r) === sev)
-    .sort((a, b) => (b.violationCount ?? 0) - (a.violationCount ?? 0));
-}
-
-function sum(a, b, c) {
-  return (a ?? 0) + (b ?? 0) + (c ?? 0);
-}
-
-function compliant(rule, cls) {
-  return (cls.resourceCount ?? 0) - (rule.violationCount ?? 0);
-}
-
-function compliancePct(rule, cls) {
-  if (!cls.resourceCount) return 0;
-  return Math.round((compliant(rule, cls) / cls.resourceCount) * 100);
-}
-
-function barStyle(rule, cls) {
-  return htmlSafe(`width:${compliancePct(rule, cls)}%`);
-}
-
-function formatDate(d) {
-  if (!d) return null;
-  try {
-    return new Intl.DateTimeFormat('en-GB', { dateStyle: 'long' }).format(new Date(d));
-  } catch {
-    return null;
-  }
-}
+import ClassAccordion from '../components/class-accordion';
+import {
+  totalResources,
+  sortedClasses,
+  formatDate,
+  mergedClassSummaries,
+} from '../utils/report-helpers';
 
 <template>
   {{pageTitle "Validation Report"}}
@@ -120,10 +21,15 @@ function formatDate(d) {
     {{else}}
       {{! ── Report header ── }}
       <header class="border-b-2 border-zinc-900 pb-8">
-        <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">
-          <a href="https://mobilitydcat-ap.github.io/mobilityDCAT-AP/releases/1.1.0/index.html"
-             target="_blank" rel="noopener noreferrer"
-             class="hover:text-zinc-600 hover:underline">
+        <p
+          class="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400"
+        >
+          <a
+            href="https://mobilitydcat-ap.github.io/mobilityDCAT-AP/releases/1.1.0/index.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="hover:text-zinc-600 hover:underline"
+          >
             DCAT-AP Mobility 1.1.0
           </a>
         </p>
@@ -139,9 +45,11 @@ function formatDate(d) {
           {{#let (formatDate @controller.reportDate) as |d|}}
             {{#if d}}{{d}} · {{/if}}
           {{/let}}
-          {{totalResources @model.targetClassSummaries}} resources reviewed ·
+          {{totalResources @model.targetClassSummaries}}
+          resources reviewed ·
           {{#if @model.totalViolations}}
-            <span class="font-semibold text-red-600">{{@model.totalViolations}} violations</span>
+            <span class="font-semibold text-red-600">{{@model.totalViolations}}
+              violations</span>
           {{else}}
             <span class="font-semibold text-green-600">No violations</span>
           {{/if}}
@@ -149,190 +57,43 @@ function formatDate(d) {
       </header>
 
       {{#if @controller.latestReportId}}
-        <div class="mt-6 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-5 py-3 text-sm text-amber-800">
+        <div
+          class="mt-6 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-5 py-3 text-sm text-amber-800"
+        >
           <span>
             A newer report is available
             {{#let (formatDate @controller.latestReportDate) as |d|}}
               {{#if d}} from {{d}}{{/if}}
             {{/let}}.
           </span>
-          <LinkTo @route="report" @model={{@controller.latestReportId}} class="font-semibold underline hover:text-amber-900">
+          <LinkTo
+            @route="report"
+            @model={{@controller.latestReportId}}
+            class="font-semibold underline hover:text-amber-900"
+          >
             View latest report
           </LinkTo>
         </div>
       {{/if}}
 
-      {{! ── Coverage ── }}
+      {{! ── Coverage & Vocabulary ── }}
       <section class="mt-10">
-        <h2 class="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">
-          Coverage
+        <h2
+          class="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400"
+        >
+          Coverage &amp; Vocabulary Compliance
         </h2>
 
-        {{#each (sortedClasses @model.targetClassSummaries) as |cls|}}
-          <div class="mt-3 overflow-hidden rounded-lg border border-zinc-200">
-
-            {{! Class accordion header }}
-            <button
-              type="button"
-              class="group flex w-full items-center gap-4 bg-zinc-50 px-5 py-3.5 text-left hover:bg-zinc-100"
-              {{on "click" (fn @controller.toggleGroup cls.id)}}
-            >
-              <div class="min-w-0 flex-1">
-                <span class="font-semibold text-zinc-900">{{shortLabel cls.targetClass}}</span>
-                <span class="block truncate text-xs text-zinc-400">{{cls.targetClass}}</span>
-              </div>
-              <span class="shrink-0 text-sm text-zinc-500">
-                <span class="font-semibold text-zinc-700">{{cls.resourceCount}}</span> resources
-              </span>
-              {{#let
-                (severityViolations cls "violation")
-                (severityViolations cls "warning")
-                (severityViolations cls "info")
-              as |mandatory recommended optional|}}
-                {{#if (eq cls.resourceCount 0)}}
-                  <span class="shrink-0 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800">
-                    No resources
-                  </span>
-                {{else if (eq mandatory 0)}}
-                  <span class="shrink-0 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">
-                    {{if (eq recommended 0) "Compliant" "Mandatory compliant"}}
-                  </span>
-                  {{#if recommended}}
-                    <span class="shrink-0 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
-                      {{recommended}} recommended violations
-                    </span>
-                  {{/if}}
-                {{else}}
-                  <span class="shrink-0 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800">
-                    {{mandatory}} mandatory violations
-                  </span>
-                  {{#if recommended}}
-                    <span class="shrink-0 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
-                      {{recommended}} recommended violations
-                    </span>
-                  {{/if}}
-                {{/if}}
-              {{/let}}
-              <span class="shrink-0 text-zinc-300 group-hover:text-zinc-500">
-                {{if (eq @controller.expandedGroup cls.id) "▲" "▼"}}
-              </span>
-            </button>
-
-            {{! Expanded body }}
-            {{#if (eq @controller.expandedGroup cls.id)}}
-              {{#let
-                (severityViolations cls "violation")
-                (severityViolations cls "warning")
-                (severityViolations cls "info")
-              as |mandatory recommended optional|}}
-              {{#if (eq cls.resourceCount 0)}}
-                <div class="border-t border-zinc-100 px-5 py-5 text-sm text-red-700">
-                  No resources found for this class.
-                </div>
-              {{else}}
-                <table class="w-full border-t border-zinc-200 text-sm">
-                  <thead>
-                    <tr class="border-b border-zinc-100 bg-white">
-                      <th class="px-5 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Property</th>
-                      <th class="px-4 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Compliant</th>
-                      <th class="w-36"></th>
-                      <th class="w-14 pr-5 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Score</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-zinc-50 bg-white">
-
-                    {{! ── Mandatory ── }}
-                    {{#let (rulesFor cls "violation") as |rules|}}
-                      {{#if rules.length}}
-                        <tr class="bg-red-50">
-                          <td colspan="4" class="px-5 py-1">
-                            <span class="text-[10px] font-bold uppercase tracking-widest text-red-600">Mandatory</span>
-                          </td>
-                        </tr>
-                        {{#each rules as |rule|}}
-                          <tr class="hover:bg-zinc-50">
-                            <td class="px-5 py-2.5 font-mono text-xs text-zinc-700"><abbr title={{rule.ruleConstraint}}>{{shortLabel rule.ruleConstraint}}</abbr></td>
-                            <td class="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-xs font-semibold
-                              {{if (eq (compliancePct rule cls) 100) "text-green-700" "text-red-700"}}">
-                              {{compliant rule cls}} / {{cls.resourceCount}}
-                            </td>
-                            <td class="w-36 px-4 py-2.5">
-                              <div class="h-1.5 overflow-hidden rounded-full {{if (eq (compliancePct rule cls) 100) "bg-green-100" "bg-red-100"}}">
-                                <div class="h-full rounded-full {{if (eq (compliancePct rule cls) 100) "bg-green-500" "bg-red-500"}}" style={{barStyle rule cls}}></div>
-                              </div>
-                            </td>
-                            <td class="w-14 py-2.5 pr-5 text-right text-xs {{if (eq (compliancePct rule cls) 100) "font-semibold text-green-700" "text-zinc-400"}}">
-                              {{compliancePct rule cls}}%
-                            </td>
-                          </tr>
-                        {{/each}}
-                      {{/if}}
-                    {{/let}}
-
-                    {{! ── Recommended ── }}
-                    {{#let (rulesFor cls "warning") as |rules|}}
-                      {{#if rules.length}}
-                        <tr class="bg-amber-50">
-                          <td colspan="4" class="px-5 py-1">
-                            <span class="text-[10px] font-bold uppercase tracking-widest text-amber-600">Recommended</span>
-                          </td>
-                        </tr>
-                        {{#each rules as |rule|}}
-                          <tr class="hover:bg-zinc-50">
-                            <td class="px-5 py-2.5 font-mono text-xs text-zinc-700"><abbr title={{rule.ruleConstraint}}>{{shortLabel rule.ruleConstraint}}</abbr></td>
-                            <td class="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-xs font-semibold
-                              {{if (eq (compliancePct rule cls) 100) "text-green-700" "text-amber-700"}}">
-                              {{compliant rule cls}} / {{cls.resourceCount}}
-                            </td>
-                            <td class="w-36 px-4 py-2.5">
-                              <div class="h-1.5 overflow-hidden rounded-full {{if (eq (compliancePct rule cls) 100) "bg-green-100" "bg-amber-100"}}">
-                                <div class="h-full rounded-full {{if (eq (compliancePct rule cls) 100) "bg-green-500" "bg-amber-400"}}" style={{barStyle rule cls}}></div>
-                              </div>
-                            </td>
-                            <td class="w-14 py-2.5 pr-5 text-right text-xs {{if (eq (compliancePct rule cls) 100) "font-semibold text-green-700" "text-zinc-400"}}">
-                              {{compliancePct rule cls}}%
-                            </td>
-                          </tr>
-                        {{/each}}
-                      {{/if}}
-                    {{/let}}
-
-                    {{! ── Optional ── }}
-                    {{#let (rulesFor cls "info") as |rules|}}
-                      {{#if rules.length}}
-                        <tr class="bg-zinc-50">
-                          <td colspan="4" class="px-5 py-1">
-                            <span class="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Optional</span>
-                          </td>
-                        </tr>
-                        {{#each rules as |rule|}}
-                          <tr class="hover:bg-zinc-50">
-                            <td class="px-5 py-2.5 font-mono text-xs text-zinc-500"><abbr title={{rule.ruleConstraint}}>{{shortLabel rule.ruleConstraint}}</abbr></td>
-                            <td class="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-xs font-medium
-                              {{if (eq (compliancePct rule cls) 100) "text-green-700" "text-zinc-500"}}">
-                              {{compliant rule cls}} / {{cls.resourceCount}}
-                            </td>
-                            <td class="w-36 px-4 py-2.5">
-                              <div class="h-1.5 overflow-hidden rounded-full {{if (eq (compliancePct rule cls) 100) "bg-green-100" "bg-zinc-200"}}">
-                                <div class="h-full rounded-full {{if (eq (compliancePct rule cls) 100) "bg-green-500" "bg-zinc-400"}}" style={{barStyle rule cls}}></div>
-                              </div>
-                            </td>
-                            <td class="w-14 py-2.5 pr-5 text-right text-xs {{if (eq (compliancePct rule cls) 100) "font-semibold text-green-700" "text-zinc-400"}}">
-                              {{compliancePct rule cls}}%
-                            </td>
-                          </tr>
-                        {{/each}}
-                      {{/if}}
-                    {{/let}}
-
-                  </tbody>
-                </table>
-              {{/if}}
-              {{/let}}
-            {{/if}}
-
-          </div>
-        {{/each}}
+        {{#let
+          (mergedClassSummaries
+            @model.targetClassSummaries @controller.vocabReport
+          )
+          as |summaries|
+        }}
+          {{#each (sortedClasses summaries) as |cls|}}
+            <ClassAccordion @cls={{cls}} @showInvalidTerms={{true}} />
+          {{/each}}
+        {{/let}}
       </section>
     {{/if}}
   </article>
