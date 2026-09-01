@@ -76,23 +76,62 @@ export function rulesFor(cls, sev) {
 }
 
 /**
- * Extracts and prepares invalid controlled vocabulary terms for display.
+ * Extracts and prepares invalid controlled vocabulary terms and suggestions for display.
  *
  * Truncates the preview list to at most 10 terms and indicates whether
  * additional terms exist beyond the preview.
  *
- * @param rule - rule where invalid vocabulary is used
- * @returns Up to 10 (invalid) terms with indicator whether there are more
+ * @param rule - Rule summary where invalid vocabulary is used.
+ * @returns Up to 10 (invalid) terms with suggestions and whether there are more.
  */
 export function violationsData(rule) {
-  let rawTerms = [];
-  if (rule?.ruleViolations?.length) {
-    rawTerms = Array.from(rule.ruleViolations)
-      .map((r) => (typeof r === 'string' ? r : r?.value || ''))
-      .filter(Boolean);
+  if (!rule?.ruleViolations?.length && !rule?.message) {
+    return { terms: [], hasMore: false, isSingular: false };
   }
 
-  const terms = rawTerms.filter(Boolean);
+  let rawTerms = [];
+  if (rule.ruleViolations?.length) {
+    rawTerms = Array.from(rule.ruleViolations)
+      .map((violation) => {
+        if (!violation) return null;
+        const value =
+          typeof violation === 'string'
+            ? violation
+            : violation.value || violation.uri || '';
+
+        const rawSuggestions =
+          violation.suggestions || violation.termSuggestions || [];
+        const suggestions = Array.from(rawSuggestions)
+          .filter(Boolean)
+          .sort((a, b) => {
+            const scoreA =
+              typeof a === 'object' && a !== null ? (a.score ?? 0) : 0;
+            const scoreB =
+              typeof b === 'object' && b !== null ? (b.score ?? 0) : 0;
+            return scoreB - scoreA;
+          })
+          .map((suggestion) => ({
+            value: suggestion.value || suggestion,
+            score: suggestion.score,
+          }));
+
+        return {
+          value,
+          suggestions,
+        };
+      })
+      .filter((term) => term?.value);
+  } else if (rule.message) {
+    rawTerms = rule.message
+      .split(', ')
+      .filter(Boolean)
+      .map((termString) => ({
+        value: termString,
+        suggestions: [],
+      }));
+  }
+
+  const terms = rawTerms.filter((term) => term && term.value);
   let hasMore = false;
 
   if (terms.length > 10) {
@@ -100,7 +139,7 @@ export function violationsData(rule) {
     terms.splice(10);
   } else if (
     terms.length === 10 &&
-    (rule?.vocabViolationCount || 0) > terms.length
+    (rule.vocabViolationCount || 0) > terms.length
   ) {
     hasMore = true;
   }
@@ -110,6 +149,16 @@ export function violationsData(rule) {
     hasMore,
     isSingular: terms.length === 1 && !hasMore,
   };
+}
+
+/**
+ * Returns plain string values for invalid vocabulary terms in a rule.
+ *
+ * @param rule - Rule summary.
+ * @returns List of invalid term strings.
+ */
+export function violationsFor(rule) {
+  return violationsData(rule).terms.map((term) => term.value);
 }
 
 /**

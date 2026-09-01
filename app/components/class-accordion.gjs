@@ -13,6 +13,23 @@ import {
 } from '../utils/report-helpers';
 import { eq, gt, isNotLast, and, or, get } from '../helpers/template';
 
+const invalidTermTooltip = helper(function ([termData]) {
+  if (!termData) return '';
+  const termValue =
+    typeof termData === 'string' ? termData : termData.value || '';
+  const suggestions = termData.suggestions || [];
+
+  if (!suggestions.length) {
+    return termValue;
+  }
+
+  const suggestionList = suggestions
+    .map((sug) => `• ${typeof sug === 'string' ? sug : sug.value || sug}`)
+    .join('\n');
+
+  return `Invalid term:\n${termValue}\n\nDid you mean:\n${suggestionList}`;
+});
+
 const scoreTooltip = helper(function ([stats]) {
   if (!stats) return '';
   if (stats.vocabInvalid > 0) {
@@ -103,11 +120,11 @@ const SeverityGroup = <template>
                   {{#if (and @showInvalidTerms vData.terms.length)}}
                     <div class="mt-0.5 text-[11px] text-zinc-400">
                       {{if vData.isSingular "Invalid term:" "Invalid terms:"}}
-                      {{#each vData.terms as |invalid_term index|}}
+                      {{#each vData.terms as |term_data index|}}
                         <span
-                          class="mb-1 inline-block rounded bg-transparent px-1.5 py-0.5 font-mono text-red-600 transition-colors hover:bg-red-50"
-                          title={{invalid_term}}
-                        >{{shortLabel invalid_term}}</span>{{if
+                          class="mb-1 inline-block rounded bg-transparent px-1.5 py-0.5 font-mono text-red-600 transition-colors hover:bg-red-50 cursor-help"
+                          title={{invalidTermTooltip term_data}}
+                        >{{shortLabel term_data.value}}</span>{{if
                           (or (isNotLast index vData.terms) vData.hasMore)
                           ","
                         }}
