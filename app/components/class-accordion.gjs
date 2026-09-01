@@ -124,25 +124,16 @@ const SeverityGroup = <template>
                   @vocabColor={{cfg.vocabBarFill}}
                 />
               </td>
-              <td class="w-32 py-2.5 pr-5 text-right text-xs whitespace-nowrap">
+              <td class="px-4 pr-5 py-2.5 text-right text-xs whitespace-nowrap">
                 <div class="cursor-help" title={{scoreTooltip stats}}>
-                  {{#if (gt stats.vocabInvalid 0)}}
-                    <span
-                      class="font-semibold tabular-nums text-zinc-900"
-                    >{{stats.validPct}}%</span>
-                    <span
-                      class="ml-1 text-[11px] font-normal text-zinc-400 tabular-nums"
-                    >({{stats.coveredPct}}% cov)</span>
-                  {{else}}
-                    <span
-                      class="font-semibold tabular-nums
-                        {{if
-                          (eq stats.validPct 100)
-                          cfg.validText
-                          'text-zinc-900'
-                        }}"
-                    >{{stats.validPct}}%</span>
-                  {{/if}}
+                  <span
+                    class="font-semibold tabular-nums
+                      {{if
+                        (eq stats.validPct 100)
+                        cfg.validText
+                        'text-zinc-900'
+                      }}"
+                  >{{stats.validPct}}%</span>
                 </div>
               </td>
             </tr>
@@ -266,7 +257,7 @@ export default class ClassAccordion extends Component {
                   </span>
                 </th>
                 <th
-                  class="w-32 pr-5 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-zinc-400"
+                  class="px-4 pr-5 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-zinc-400"
                 >Score</th>
               </tr>
             </thead>
