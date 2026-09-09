@@ -5,6 +5,7 @@ import { helper } from '@ember/component/helper';
 import { on } from '@ember/modifier';
 import shortLabel from '../utils/uri-labels';
 import StackedProgressBar from './stacked-progress-bar';
+import InvalidTermBadge from './invalid-term-badge';
 import {
   severityViolations,
   rulesFor,
@@ -103,11 +104,8 @@ const SeverityGroup = <template>
                   {{#if (and @showInvalidTerms vData.terms.length)}}
                     <div class="mt-0.5 text-[11px] text-zinc-400">
                       {{if vData.isSingular "Invalid term:" "Invalid terms:"}}
-                      {{#each vData.terms as |invalid_term index|}}
-                        <span
-                          class="mb-1 inline-block rounded bg-transparent px-1.5 py-0.5 font-mono text-red-600 transition-colors hover:bg-red-50"
-                          title={{invalid_term}}
-                        >{{shortLabel invalid_term}}</span>{{if
+                      {{#each vData.terms as |term_data index|}}
+                        <InvalidTermBadge @term={{term_data}} />{{if
                           (or (isNotLast index vData.terms) vData.hasMore)
                           ","
                         }}
