@@ -8,4 +8,5 @@ export default class ReportController extends Controller {
   @tracked latestReportDate = null;
   @tracked vocabReport = null;
   @tracked feedbackComment = null;
+  @tracked shaclReport = null;
 }

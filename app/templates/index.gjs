@@ -2,6 +2,7 @@ import { pageTitle } from 'ember-page-title';
 import { LinkTo } from '@ember/routing';
 import { on } from '@ember/modifier';
 import { fn } from '@ember/helper';
+import Toggle from 'rpio-dcat-validator/components/toggle';
 
 <template>
   {{pageTitle "mobilityDCAT-AP Validator"}}
@@ -19,25 +20,38 @@ import { fn } from '@ember/helper';
       </p>
 
       <form
-        class="mx-auto mt-10 flex max-w-2xl flex-col gap-3 sm:flex-row"
+        class="mx-auto mt-10 max-w-2xl"
         {{on "submit" @controller.submit}}
       >
-        <input
-          type="url"
-          required
-          placeholder="https://example.org/catalog.ttl"
-          value={{@controller.endpointUrl}}
-          {{on "input" @controller.updateUrl}}
-          class="input flex-1"
-          disabled={{@controller.submitting}}
-        />
-        <button
-          type="submit"
-          class="btn-primary"
-          disabled={{@controller.submitting}}
-        >
-          {{if @controller.submitting "Starting…" "Validate"}}
-        </button>
+        {{#if @controller.showSpecVersionToggle}}
+          <div class="mb-4 flex justify-center sm:justify-start">
+            <Toggle
+              @label="Specification:"
+              @value={{@controller.dcatApVersion}}
+              @onChange={{@controller.setVersion}}
+              @disabled={{@controller.submitting}}
+            />
+          </div>
+        {{/if}}
+
+        <div class="flex flex-col gap-3 sm:flex-row">
+          <input
+            type="url"
+            required
+            placeholder="https://example.org/catalog.ttl"
+            value={{@controller.endpointUrl}}
+            {{on "input" @controller.updateUrl}}
+            class="input flex-1"
+            disabled={{@controller.submitting}}
+          />
+          <button
+            type="submit"
+            class="btn-primary"
+            disabled={{@controller.submitting}}
+          >
+            {{if @controller.submitting "Starting…" "Validate"}}
+          </button>
+        </div>
       </form>
 
       {{#if @controller.errorMessage}}
