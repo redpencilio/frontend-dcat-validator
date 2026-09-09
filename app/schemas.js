@@ -9,6 +9,7 @@ export const validationJobSchema = {
     { kind: 'field', name: 'pagesFetched', sourceKey: 'pages-fetched' },
     { kind: 'field', name: 'totalPages', sourceKey: 'total-pages' },
     { kind: 'field', name: 'datasetsFound', sourceKey: 'datasets-found' },
+    { kind: 'field', name: 'comment' },
     {
       kind: 'resource',
       name: 'error',
