@@ -1,12 +1,15 @@
 import { pageTitle } from 'ember-page-title';
 import { LinkTo } from '@ember/routing';
 import ClassAccordion from '../components/class-accordion';
+import OverviewCard from '../components/overview-card';
+import shortLabel from '../utils/uri-labels';
 import {
   totalResources,
   sortedClasses,
   formatDate,
   mergedClassSummaries,
-  specInfo
+  specInfo,
+  overallTierStats,
 } from '../utils/report-helpers';
 import NotesSection from 'rpio-dcat-validator/components/notes-section';
 
@@ -74,15 +77,6 @@ import NotesSection from 'rpio-dcat-validator/components/notes-section';
           </LinkTo>
         </div>
       {{/if}}
-
-      {{! ── Coverage & Vocabulary ── }}
-      <section class="mt-10">
-        <h2
-          class="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400"
-        >
-          Coverage &amp; Vocabulary Compliance
-        </h2>
-
         {{#let
           (mergedClassSummaries
             @model.targetClassSummaries
@@ -91,13 +85,42 @@ import NotesSection from 'rpio-dcat-validator/components/notes-section';
           )
           as |summaries|
         }}
-          {{#each (sortedClasses summaries) as |cls|}}
-            <ClassAccordion @cls={{cls}} @showInvalidTerms={{true}} />
-          {{/each}}
-        {{/let}}
-      </section>
 
-      <NotesSection @comment={{@controller.feedbackComment}} />
+        <section class="mt-10">
+          <h2
+            class="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400"
+          >
+            Compliance Overview
+          </h2>
+
+          <div class="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <OverviewCard
+              @tier="violation"
+              @stats={{overallTierStats summaries "violation"}}
+            />
+            <OverviewCard
+              @tier="warning"
+              @stats={{overallTierStats summaries "warning"}}
+            />
+          </div>
+        </section>
+
+        {{! ── Detailed Breakdown ── }}
+        <section class="mt-10">
+          <h2
+            class="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400"
+          >
+            Detailed Report
+          </h2>
+
+          <div class="mt-4 space-y-3">
+            {{#each (sortedClasses summaries) as |cls|}}
+              <ClassAccordion @cls={{cls}} @showInvalidTerms={{true}} />
+            {{/each}}
+          </div>
+        </section>
+      {{/let}}
     {{/if}}
+    <NotesSection @comment={{@controller.feedbackComment}} />
   </article>
 </template>

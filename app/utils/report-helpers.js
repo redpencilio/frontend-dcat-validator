@@ -194,6 +194,79 @@ export function ruleStats(rule, cls) {
   };
 }
 
+/**
+ * Calculates aggregated compliance statistics across all target classes for a given severity tier.
+ *
+ * @param classSummaries - Target class summaries.
+ * @param severity - Severity tier ('violation' or 'warning').
+ * @returns Aggregated compliance metrics and CSS bar widths.
+ */
+export function overallTierStats(classSummaries, severity) {
+  if (!classSummaries || !classSummaries.length) {
+    return {
+      totalExpected: 0,
+      totalCovered: 0,
+      totalValid: 0,
+      totalVocabInvalid: 0,
+      totalMissing: 0,
+      validPct: 100,
+      coveredPct: 100,
+      hasVocabInvalid: false,
+      validWidthStyle: htmlSafe('width:100%'),
+      vocabInvalidWidthStyle: htmlSafe('width:0%'),
+    };
+  }
+
+  let totalExpected = 0;
+  let totalCovered = 0;
+  let totalValid = 0;
+  let totalVocabInvalid = 0;
+  let totalMissing = 0;
+
+  for (const cls of classSummaries) {
+    const resourceCount = cls.resourceCount || 0;
+    if (resourceCount === 0) continue;
+
+    for (const rule of cls.ruleSummaries || []) {
+      if (severityOf(rule) !== severity) continue;
+
+      const missing = rule.violationCount || 0;
+      const covered = Math.max(0, resourceCount - missing);
+      const vocabInvalid = Math.min(covered, rule.vocabViolationCount || 0);
+      const valid = Math.max(0, covered - vocabInvalid);
+
+      totalExpected += resourceCount;
+      totalMissing += missing;
+      totalCovered += covered;
+      totalVocabInvalid += vocabInvalid;
+      totalValid += valid;
+    }
+  }
+
+  const validPct =
+    totalExpected > 0 ? Math.round((totalValid / totalExpected) * 100) : 100;
+  const coveredPct =
+    totalExpected > 0 ? Math.round((totalCovered / totalExpected) * 100) : 100;
+
+  const validWidthPct =
+    totalExpected > 0 ? (totalValid / totalExpected) * 100 : 100;
+  const vocabInvalidWidthPct =
+    totalExpected > 0 ? (totalVocabInvalid / totalExpected) * 100 : 0;
+
+  return {
+    totalExpected,
+    totalCovered,
+    totalValid,
+    totalVocabInvalid,
+    totalMissing,
+    validPct,
+    coveredPct,
+    hasVocabInvalid: totalVocabInvalid > 0,
+    validWidthStyle: htmlSafe(`width:${validWidthPct}%`),
+    vocabInvalidWidthStyle: htmlSafe(`width:${vocabInvalidWidthPct}%`),
+  };
+}
+
 const NODE_KIND_MESSAGES = {
   'sh:BlankNodeOrIRI':
     'Value must be a valid URI resource (<https://...>), not a text string.',

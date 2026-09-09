@@ -202,7 +202,7 @@ export default class ClassAccordion extends Component {
   }
 
   <template>
-    <div class="mt-3 overflow-hidden rounded-lg border border-zinc-200">
+    <div class="overflow-hidden rounded-lg border border-zinc-200">
       <button
         type="button"
         class="group flex w-full items-center gap-4 bg-zinc-50 px-5 py-3.5 text-left hover:bg-zinc-100"

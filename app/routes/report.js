@@ -22,6 +22,7 @@ export default class ReportRoute extends Route {
             'coverage-job.shacl-report',
             'coverage-job.shacl-report.target-class-summaries',
             'coverage-job.shacl-report.target-class-summaries.rule-summaries',
+            'coverage-job.shacl-report.target-class-summaries.rule-summaries.rule-violations',
           ],
         }),
       );
