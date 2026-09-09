@@ -2,7 +2,7 @@ import { pageTitle } from 'ember-page-title';
 import { LinkTo } from '@ember/routing';
 import ClassAccordion from '../components/class-accordion';
 import OverviewCard from '../components/overview-card';
-import shortLabel from '../utils/uri-labels';
+import { eq } from '../helpers/template';
 import {
   totalResources,
   sortedClasses,
@@ -98,10 +98,17 @@ import NotesSection from 'rpio-dcat-validator/components/notes-section';
               @tier="violation"
               @stats={{overallTierStats summaries "violation"}}
             />
-            <OverviewCard
-              @tier="warning"
-              @stats={{overallTierStats summaries "warning"}}
-            />
+            {{#if (eq @controller.dcatApVersion "1.1.0")}}
+              <OverviewCard
+                @tier="warning"
+                @stats={{overallTierStats summaries "warning"}}
+              />
+            {{else}}
+              <OverviewCard
+                @tier="info"
+                @stats={{overallTierStats summaries "info"}}
+              />
+            {{/if}}
           </div>
         </section>
 
