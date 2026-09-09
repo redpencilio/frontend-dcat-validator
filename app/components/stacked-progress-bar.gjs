@@ -3,12 +3,33 @@ import { ruleStats } from '../utils/report-helpers';
 import { gt } from '../helpers/template';
 
 export default class StackedProgressBar extends Component {
+  get isComplete() {
+    if (!this.stats || this.stats.total === 0) return false;
+    return (
+      this.stats.valid === this.stats.total && this.stats.vocabInvalid === 0
+    );
+  }
+
+  get completeValidColor() {
+    return this.args.completeValidColor || 'bg-green-500';
+  }
+
+  get completeVocabColor() {
+    return this.args.completeVocabColor || 'bg-green-300';
+  }
+
   get validColor() {
-    return this.args.validColor || 'bg-green-500';
+    if (this.isComplete) {
+      return this.completeValidColor;
+    }
+    return this.args.validColor || 'bg-red-500';
   }
 
   get vocabColor() {
-    return this.args.vocabColor || 'bg-green-300';
+    if (this.isComplete) {
+      return this.completeVocabColor;
+    }
+    return this.args.vocabColor || 'bg-red-300';
   }
 
   get stats() {
