@@ -131,12 +131,29 @@ export const ruleViolationSchema = {
     { kind: 'field', name: 'value', sourceKey: 'value' },
     { kind: 'field', name: 'uri' },
     {
+      kind: 'hasMany',
+      name: 'suggestions',
+      type: 'term-suggestions',
+      sourceKey: 'suggestions',
+      options: { async: false, linksMode: true, inverse: null },
+    },
+    {
       kind: 'resource',
       name: 'ruleSummary',
       type: 'rule-summaries',
       sourceKey: 'rule-summary',
       options: { async: true, inverse: null },
     },
+  ],
+};
+
+export const termSuggestionSchema = {
+  type: 'term-suggestions',
+  identity: { kind: '@id', name: 'id' },
+  fields: [
+    { kind: 'field', name: 'value' },
+    { kind: 'field', name: 'score' },
+    { kind: 'field', name: 'uri' },
   ],
 };
 
@@ -170,6 +187,7 @@ export const schemas = [
   targetClassSummarySchema,
   ruleSummarySchema,
   ruleViolationSchema,
+  termSuggestionSchema,
   endpointSchema,
   jobErrorSchema,
 ];
