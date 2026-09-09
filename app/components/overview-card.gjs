@@ -4,19 +4,21 @@ const TIER_CONFIG = {
   violation: {
     title: 'Mandatory Compliance',
     titleColor: 'text-red-600',
-    badgeLabel: 'Strict Specification',
-    badgeClass: 'bg-red-50 text-red-700',
-    validBarColor: 'bg-red-500',
-    vocabBarColor: 'bg-red-300',
+    validBarColor: 'bg-green-500',
+    vocabBarColor: 'bg-green-300',
   },
   warning: {
     title: 'Recommended Compliance',
     titleColor: 'text-amber-600',
-    badgeLabel: 'Quality & Richness',
-    badgeClass: 'bg-amber-50 text-amber-700',
     validBarColor: 'bg-amber-400',
     vocabBarColor: 'bg-amber-200',
   },
+  info: {
+    title: 'Optional Compliance',
+    titleColor: 'text-zinc-400',
+    validBarColor: 'bg-zinc-400',
+    vocabBarColor: 'bg-zinc-200'
+  }
 };
 
 export default class OverviewCard extends Component {
@@ -27,10 +29,6 @@ export default class OverviewCard extends Component {
 
   get title() {
     return this.args.title || this.config.title;
-  }
-
-  get badgeLabel() {
-    return this.args.badgeLabel || this.config.badgeLabel;
   }
 
   get titleColor() {
