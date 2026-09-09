@@ -4,8 +4,8 @@ const TIER_CONFIG = {
   violation: {
     title: 'Mandatory Compliance',
     titleColor: 'text-red-600',
-    validBarColor: 'bg-green-500',
-    vocabBarColor: 'bg-green-300',
+    validBarColor: 'bg-red-500',
+    vocabBarColor: 'bg-red-300',
   },
   warning: {
     title: 'Recommended Compliance',
