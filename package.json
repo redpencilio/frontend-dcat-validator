@@ -96,5 +96,8 @@
   },
   "ember": {
     "edition": "octane"
+  },
+  "dependencies": {
+    "ember-tooltips": "^4.0.0"
   }
 }
