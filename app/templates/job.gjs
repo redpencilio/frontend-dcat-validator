@@ -62,6 +62,12 @@ function isFailed(model) {
         </div>
       </div>
     {{else}}
+      {{#if @controller.comment}}
+        <div class="card mt-8 border-amber-200 bg-amber-50">
+          <h2 class="text-sm font-medium text-amber-800">Note</h2>
+          <p class="mt-2 text-sm text-amber-700">{{@controller.comment}}</p>
+        </div>
+      {{/if}}
       <div class="card mt-8">
         <div class="flex items-baseline justify-between">
           <h2 class="text-sm font-medium text-zinc-800">

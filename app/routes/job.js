@@ -38,6 +38,7 @@ export default class JobRoute extends Route {
     super.setupController(controller, model);
     controller.errorMessage = null;
     controller.latestReportId = null;
+    controller.comment = model?.comment ?? null;
     if (this.#loadError) {
       controller.errorMessage = this.#loadError;
     } else if (model) {
@@ -89,6 +90,8 @@ export default class JobRoute extends Route {
       );
       const job = content.data;
       const status = (job.status || '').split('/').at(-1).toLowerCase();
+
+      this.controller.comment = job.comment ?? this.controller.comment;
 
       if (status === 'finished' || status === 'success') {
         const reportId = job['coverage-report']?.data?.id;

@@ -33,6 +33,7 @@ export default class ReportRoute extends Route {
     super.setupController(controller, model);
     controller.errorMessage = this.#loadError;
     controller.reportDate = null;
+    controller.feedbackComment = null;
     controller.latestReportId = null;
     controller.latestReportDate = null;
     controller.vocabReport = null;
@@ -42,6 +43,7 @@ export default class ReportRoute extends Route {
       try {
         const job = this.store.peekRecord('validation-jobs', jobId);
         controller.reportDate = job?.modifiedAt ?? job?.createdAt ?? null;
+        controller.feedbackComment = job?.comment ?? null;
         const vocabId = job?.['vocabulary-report']?.data?.id;
         if (vocabId) {
           controller.vocabReport = this.store.peekRecord(

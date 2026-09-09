@@ -7,6 +7,7 @@ import {
   formatDate,
   mergedClassSummaries,
 } from '../utils/report-helpers';
+import NotesSection from 'rpio-dcat-validator/components/notes-section';
 
 <template>
   {{pageTitle "Validation Report"}}
@@ -95,6 +96,8 @@ import {
           {{/each}}
         {{/let}}
       </section>
+
+      <NotesSection @comment={{@controller.feedbackComment}} />
     {{/if}}
   </article>
 </template>
