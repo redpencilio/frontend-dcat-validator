@@ -3,12 +3,14 @@ export const validationJobSchema = {
   identity: { kind: '@id', name: 'id' },
   fields: [
     { kind: 'field', name: 'endpointUrl', sourceKey: 'endpoint-url' },
+    { kind: 'field', name: 'dcatApVersion', sourceKey: 'dcat-ap-version' },
     { kind: 'field', name: 'status' },
     { kind: 'field', name: 'createdAt', sourceKey: 'created' },
     { kind: 'field', name: 'modifiedAt', sourceKey: 'modified' },
     { kind: 'field', name: 'pagesFetched', sourceKey: 'pages-fetched' },
     { kind: 'field', name: 'totalPages', sourceKey: 'total-pages' },
     { kind: 'field', name: 'datasetsFound', sourceKey: 'datasets-found' },
+    { kind: 'field', name: 'comment' },
     {
       kind: 'resource',
       name: 'error',
@@ -105,6 +107,7 @@ export const ruleSummarySchema = {
     { kind: 'field', name: 'ruleConstraint', sourceKey: 'rule-constraint' },
     { kind: 'field', name: 'message' },
     { kind: 'field', name: 'severity' },
+    { kind: 'field', name: 'constraint' },
     { kind: 'field', name: 'uri' },
     {
       kind: 'resource',
@@ -129,12 +132,29 @@ export const ruleViolationSchema = {
     { kind: 'field', name: 'value', sourceKey: 'value' },
     { kind: 'field', name: 'uri' },
     {
+      kind: 'hasMany',
+      name: 'suggestions',
+      type: 'term-suggestions',
+      sourceKey: 'suggestions',
+      options: { async: false, linksMode: true, inverse: null },
+    },
+    {
       kind: 'resource',
       name: 'ruleSummary',
       type: 'rule-summaries',
       sourceKey: 'rule-summary',
       options: { async: true, inverse: null },
     },
+  ],
+};
+
+export const termSuggestionSchema = {
+  type: 'term-suggestions',
+  identity: { kind: '@id', name: 'id' },
+  fields: [
+    { kind: 'field', name: 'value' },
+    { kind: 'field', name: 'score' },
+    { kind: 'field', name: 'uri' },
   ],
 };
 
@@ -168,6 +188,7 @@ export const schemas = [
   targetClassSummarySchema,
   ruleSummarySchema,
   ruleViolationSchema,
+  termSuggestionSchema,
   endpointSchema,
   jobErrorSchema,
 ];

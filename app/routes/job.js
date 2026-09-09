@@ -38,18 +38,23 @@ export default class JobRoute extends Route {
     super.setupController(controller, model);
     controller.errorMessage = null;
     controller.latestReportId = null;
+    controller.comment = model?.comment ?? null;
     if (this.#loadError) {
       controller.errorMessage = this.#loadError;
     } else if (model) {
       const status = (model.status || '').split('/').at(-1).toLowerCase();
       if (status === 'failed' || status === 'error') {
-        controller.errorMessage = this.#jobErrorMessage(model) || 'Something went wrong while validating this catalog.';
+        controller.errorMessage =
+          this.#jobErrorMessage(model) ||
+          'Something went wrong while validating this catalog.';
       }
     }
     if (model?.endpointUrl) {
-      fetchLatestReport(model.endpointUrl).then((latest) => {
-        controller.latestReportId = latest?.id ?? null;
-      });
+      fetchLatestReport(model.endpointUrl, model.dcatApVersion || '1.1.0').then(
+        (latest) => {
+          controller.latestReportId = latest?.id ?? null;
+        },
+      );
     }
   }
 
@@ -90,13 +95,15 @@ export default class JobRoute extends Route {
       const job = content.data;
       const status = (job.status || '').split('/').at(-1).toLowerCase();
 
+      this.controller.comment = job.comment ?? this.controller.comment;
+
       if (status === 'finished' || status === 'success') {
         const reportId = job['coverage-report']?.data?.id;
         if (reportId) {
           this.router.replaceWith('report', reportId);
           return;
         }
-        // The job is marked as success, but the database/cache hasn't 
+        // The job is marked as success, but the database/cache hasn't
         // returned the linked report yet (eventual consistency).
         // Keep polling until the report appears!
         this.#schedule();
@@ -104,7 +111,9 @@ export default class JobRoute extends Route {
       }
 
       if (status === 'failed' || status === 'error') {
-        this.controller.errorMessage = this.#jobErrorMessage(job) || 'Something went wrong while validating this catalog.';
+        this.controller.errorMessage =
+          this.#jobErrorMessage(job) ||
+          'Something went wrong while validating this catalog.';
         return;
       }
     } catch (err) {
